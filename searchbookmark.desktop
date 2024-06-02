@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Bookmark-Suche
+Comment=Durchsucht bookmarks.txt auf dem Server oder lokal
+Exec=searchbookmark
+Icon=mybookmarks.0
+Categories=Network;Utility;
+Terminal=false

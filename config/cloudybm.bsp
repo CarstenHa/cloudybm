@@ -1,0 +1,11 @@
+# Icon-Datei (z.B. aus Unterordner /usr/share/icons/)
+applypng="/usr/share/icons/Yaru/32x32/actions/gtk-apply.png"
+closepng="/usr/share/icons/Yaru/32x32/actions/gtk-close.png"
+serveruser=""
+servername=""
+serverkey=""
+serverport="22"
+# Absoluter Pfad zu bookmarks.txt auf Server
+serverdir=""
+# Absoluter Pfad zu cloudybm auf Server
+cloudybmdir=""

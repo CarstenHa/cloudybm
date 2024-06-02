@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 48 48"
+   version="1.1"
+   id="svg4"
+   sodipodi:docname="mybookmarks.0.svg"
+   inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
+   width="48"
+   height="48"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs8" />
+  <sodipodi:namedview
+     id="namedview6"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     showgrid="false"
+     inkscape:zoom="8.5270297"
+     inkscape:cx="32.602209"
+     inkscape:cy="22.98573"
+     inkscape:window-width="1600"
+     inkscape:window-height="837"
+     inkscape:window-x="0"
+     inkscape:window-y="28"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg4"
+     lock-margins="false"
+     viewbox-width="124.6" />
+  <!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. -->
+  <path
+     id="path2"
+     d="m 11.394655,1.8677103 c -2.3190962,0 -4.200628,1.881531 -4.200628,4.200628 V 46.674397 l 16.802509,-9.801463 16.802505,9.801463 V 6.0683383 c 0,-2.319097 -1.881528,-4.200628 -4.200628,-4.200628 z m 10.831618,4.971494 c 0.44586,0.004 0.897683,0.03421 1.354061,0.09196 4.911278,0.62179 8.932519,4.6145277 9.589856,9.5209737 0.385504,2.884571 -0.334575,5.591764 -1.794019,7.75841 l 6.417855,6.417848 c 0.836392,0.836422 0.836397,2.198244 -5.02e-4,3.03681 -0.837492,0.837487 -2.195558,0.837487 -3.033049,0 L 28.342571,27.247352 C 26.176463,28.707013 23.468732,29.426821 20.58416,29.041374 15.677409,28.387249 11.684173,24.362711 11.062221,19.449289 10.195956,12.60363 15.538415,6.7791943 22.226301,6.8392043 Z M 22.07364,11.128029 c -3.784255,0 -6.862937,3.078683 -6.862937,6.86294 0,3.78533 3.078682,6.862937 6.862937,6.862937 3.784254,0 6.862939,-3.078683 6.862939,-6.862937 0,-3.784257 -3.078685,-6.86294 -6.862939,-6.86294 z"
+     style="fill:#666666;fill-opacity:1;stroke-width:0.0875131" />
+</svg>

@@ -1,0 +1,160 @@
+#!/bin/bash
+
+#if [ -z "$(type -p ssh-askpass)" ]; then
+# notify-send -t 0 "Fehler" "Das Programm ssh-askpass wird benötigt. Vorgang wird abgebrochen."
+# exit 1
+#fi
+
+# Mit readlink kann man den tatsächlichen Speicherort des Skriptes ermitteln.
+pathofsearchbm="$(dirname $(readlink -f ${0}))"
+if [ -e "${pathofsearchbm}/config/cloudybm.cfg" ]; then
+ source "${pathofsearchbm}/config/cloudybm.cfg"
+else
+ echo "Datei ${pathofsearchbm}/config/cloudybm.cfg existiert nicht."
+ echo "Programm wird abgebrochen."
+ exit 1
+fi
+
+if [ -z "$(type -p zenity)" ]; then
+ notify-send -i "$closepng" Fehler "Zenity wurde nicht gefunden. Bitte erst installieren."
+ logger -s --id=$$ "Zenity wurde nicht gefunden. Bitte erst installieren."
+ exit 1
+fi
+if [ -z "$(type -p yad)" ]; then
+ notify-send -i "$closepng" Fehler "Yad wurde nicht gefunden. Bitte erst installieren."
+ logger -s --id=$$ "Yad wurde nicht gefunden. Bitte erst installieren."
+ exit 1
+fi
+if [ ! -d "${HOME}/.mybookmarks" ]; then
+ mkdir -v "${HOME}/.mybookmarks"
+ echo -e "Wichtiger Hinweis:\nDies ist eine Kopie der bookmarks.txt vom Raspi. Die Datei wird nur zum Auslesen genutzt und nur in der Richtung Server => Lokal synchronisiert. Bei Änderungen bitte die Datei auf dem Raspi modifizieren.\nManuelle Änderungen an der Datei in diesem Ordner werden nicht berücksichtigt\nund ggf. beim Hinzufügen eines neuen Lesezeichens überschrieben." >"${HOME}/.mybookmarks/README"
+fi
+
+echo "Verfügbarkeit des Rechners wird überprüft ..."
+ping -c 1 "${servername}" &>/dev/null
+serverreturn="$?"
+
+if [ "$serverreturn" == 0 ]; then
+ echo "${0}: ${servername} ist erreichbar." | tee >(logger --id=$$)
+ serveronline="yes"
+ serverdir="${serverdir%/}"
+ [ -z "$(ssh-add -l | grep "$(ssh-keygen -lf "$serverkey" | cut -f2 -d' ')")" -a -n "$serverkey" ] && ssh-add "$serverkey"
+ scp -pP "$serverport" "${serveruser}@${servername}:${serverdir}/bookmarks.txt" "${HOME}/.mybookmarks/"
+else
+ echo "${0}: ${servername} ist nicht erreichbar. Es wird die lokale Bookmark-Datei ausgewertet." | tee >(logger --id=$$)
+fi
+
+# Den Internal Field Separator neu zu definieren ist deshalb notwendig, weil die Spalten in der bookmark.txt
+# mit Tabulatoren voneinander getrennt sind. Wichtig für yad!
+IFS=$'\t'
+
+if [ "$serveronline" == "yes" ]; then
+
+ eing="$(zenity --entry \
+                --title="Cloud Bookmark-Suche" \
+                --text="Bitte Suchwort eingeben:" \
+ )"
+
+ [ $? == 1 ] && exit 1 
+
+ if [ "$eing" == '*' ]; then
+  pisuche="$(ssh -p "$serverport" "${serveruser}@${servername}" '/usr/bin/cat '"$serverdir"'/bookmarks.txt' | sed 's/^\(.*\)[\t]\(.*\)[\t]\(.*\)/"\1"\t"\2"\t\3/' | sed 's/""/-/g;s/\(^\|\t\)"/\1/g;s/"\(\t\)/\1/g' | tr '\n' '\t')"
+ else
+  pisuche="$(ssh -p "$serverport" "${serveruser}@${servername}" '/usr/bin/grep -i '"$eing"' '"$serverdir"'/bookmarks.txt' | sed 's/^\(.*\)[\t]\(.*\)[\t]\(.*\)/"\1"\t"\2"\t\3/' | sed 's/""/-/g;s/\(^\|\t\)"/\1/g;s/"\(\t\)/\1/g' | tr '\n' '\t')"
+ fi
+
+else
+
+ eing="$(zenity --entry \
+                --title="Lokale Bookmark-Suche" \
+                --text="Bitte Suchwort eingeben:" \
+ )"
+
+ [ $? == 1 ] && exit 1 
+
+ if [ "$eing" == '*' ]; then
+  pisuche="$(cat "${HOME}/.mybookmarks/bookmarks.txt" | sed 's/^\(.*\)[\t]\(.*\)[\t]\(.*\)/"\1"\t"\2"\t\3/' | sed 's/""/-/g;s/\(^\|\t\)"/\1/g;s/"\(\t\)/\1/g' | tr '\n' '\t')"
+ else
+  pisuche="$(grep -i "$eing" "${HOME}/.mybookmarks/bookmarks.txt" | sed 's/^\(.*\)[\t]\(.*\)[\t]\(.*\)/"\1"\t"\2"\t\3/' | sed 's/""/-/g;s/\(^\|\t\)"/\1/g;s/"\(\t\)/\1/g' | tr '\n' '\t')"
+ fi
+
+fi
+
+if [ -n "$pisuche" ]; then
+
+  # Löschen-Button wird nur angezeigt, wenn Raspi erreichbar ist.
+  if [ "$serveronline" == "yes" ]; then
+    #--print-all (Kompletter Inhalt)
+    #--print-column=3 (Nur 3. Spalte aus ausgewählter Zeile)
+    #--print-column=0 (komplette ausgewählte Zeile)
+    result=$(yad --height=420 \
+           --width=600 \
+           --list \
+           --title="Bitte Lesezeichen auswählen" \
+           --column="Schlüsselwörter" \
+           --column="Beschreibung" \
+           --column="URI" \
+           --print-column=0 \
+           --separator='\t' \
+           --button="Öffnen:0" \
+           --button="Abbrechen:1" \
+           --button="Löschen:2" \
+           $pisuche)
+  else
+    result=$(yad --height=420 \
+           --width=600 \
+           --list \
+           --title="Bitte Lesezeichen auswählen" \
+           --column="Schlüsselwörter" \
+           --column="Beschreibung" \
+           --column="URI" \
+           --print-column=0 \
+           --separator='\t' \
+           --button="Öffnen:0" \
+           --button="Abbrechen:1" \
+           $pisuche)
+  fi
+    
+  bmauswexit=$?
+  result="$(sed 's/-\t/\t/g' <<<"$result")"
+  bmwoerter="$(echo "$result" | cut -f1)"
+  bmdesc="$(echo "$result" | cut -f2)"
+  bmuri="$(echo "$result" | cut -f3)"
+
+  if [ "$bmauswexit" == 0 ]; then
+
+   # Öffnen der Seite in Standardanwendung.
+   nohup xdg-open "$bmuri" &
+ 
+  # Löschung eines Bookmarks funktioniert nur, wenn Raspi erreichbar ist.
+  elif [ "$bmauswexit" == 2 ]; then
+
+   ausg="$(printf '%s\t%s\t%s' "$bmwoerter" "$bmdesc" "$bmuri")"
+   delbmexit="$(ssh -p "$serverport" "${serveruser}@${servername}" "cp -f \"${serverdir}/bookmarks.txt\" \"${serverdir}/bookmarks.bak\" && \
+                                                                    sed -i '\@'\"$ausg\"'@d' \"${serverdir}/bookmarks.txt\"" &>/dev/null; echo $?)"
+
+   # Neue Datei wird vom Server heruntergeladen.
+   case $delbmexit in
+    0) scp -pP "$serverport" "${serveruser}@${servername}:${serverdir}/bookmarks.txt" "${HOME}/.mybookmarks/"
+       scpexit=$?
+       if [ "$scpexit" == 0 ]; then
+        echo "${0}: Lesezeichen gelöscht und bookmarks.txt kopiert." | tee >(logger --id=$$)
+        notify-send -i "$applypng" Hinweis "Lesezeichen gelöscht und bookmarks.txt kopiert."
+       else
+        echo "${0}: Lesezeichen gelöscht aber Download hat nicht geklappt." | tee >(logger --id=$$)
+        notify-send -i "$applypng" Hinweis "Lesezeichen gelöscht aber Download hat nicht geklappt."
+       fi
+    ;;
+    *) logger -s --id=$$ "Lesezeichen konnte nicht gelöscht werden. Zur Debuggen auf Raspi bitte journalctl -r aufrufen."
+       notify-send -i "$closepng" Fehler "Lesezeichen konnte nicht gelöscht werden."
+    ;;
+   esac
+
+  fi
+
+else
+
+  logger -s --id=$$ "Nichts passendes gefunden."
+  notify-send -i "$closepng" Fehler "Nichts passendes gefunden."
+
+fi

@@ -1,0 +1,74 @@
+#!/bin/bash
+
+# Mit readlink kann man den tatsächlichen Speicherort des Skriptes ermitteln.
+pathofsearchbm="$(dirname $(readlink -f ${0}))"
+if [ -e "${pathofsearchbm}/config/cloudybm.cfg" ]; then
+ source "${pathofsearchbm}/config/cloudybm.cfg"
+else
+ echo "Datei ${pathofsearchbm}/config/cloudybm.cfg existiert nicht."
+ echo "Programm wird abgebrochen."
+ exit 1
+fi
+if [ -z "$(type -p zenity)" ]; then
+ notify-send -i "$closepng" Fehler "Zenity wurde nicht gefunden. Bitte erst installieren."
+ logger -s --id=$$ "Zenity wurde nicht gefunden. Bitte erst installieren."
+ exit 1
+fi
+if [ ! -d "${HOME}/.mybookmarks" ]; then
+ mkdir -v "${HOME}/.mybookmarks"
+ echo -e "Wichtiger Hinweis:\nDies ist eine Kopie der bookmarks.txt vom Raspi. Die Datei wird nur zum Auslesen genutzt und nur in der Richtung Server => Lokal synchronisiert. Bei Änderungen bitte die Datei auf dem Raspi modifizieren.\nManuelle Änderungen an der Datei in diesem Ordner werden nicht berücksichtigt\nund ggf. beim Hinzufügen eines neuen Lesezeichens überschrieben." >"${HOME}/.mybookmarks/README"
+fi
+
+echo "Verfügbarkeit des Rechners wird überprüft ..."
+ping -c 1 "${servername}" &>/dev/null
+serverreturn="$?"
+
+if [ "$serverreturn" == 0 ]; then
+ echo "${0}: ${servername} ist erreichbar." | tee >(logger --id=$$)
+ serveronline="yes"
+ serverdir="${serverdir%/}"
+ [ -z "$(ssh-add -l | grep "$(ssh-keygen -lf "$serverkey" | cut -f2 -d' ')")" -a -n "$serverkey" ] && ssh-add "$serverkey"
+else
+ notify-send -i "$closepng" Fehler "${servername} ist nicht erreichbar."
+ logger -s --id=$$ "${servername} ist nicht erreichbar."
+ # Diese Option ist zur Sicherheit, wenn ein Rechner zuvor mal nicht richtig ausgehängt wurde.
+ exit 1
+fi
+
+newbm="$(zenity --forms --title="Neues Lesezeichen hinzufügen" \
+				--text="Bitte Informationen eingeben" \
+				--separator="|" \
+				--add-entry="Schlüsselwörter (bitte mit Komma trennen)" \
+				--add-entry="Beschreibung" \
+				--add-entry="URI"
+		)"
+
+# Wenn Zenity-Abbruch durchgeführt wurde
+[ -z "$newbm" ] && exit
+
+bmkeywords="$(echo "$newbm" | cut -f1 -d'|')"
+bmdesc="$(echo "$newbm" | cut -f2 -d'|')"
+bmuri="$(echo "$newbm" | cut -f3 -d'|')"
+
+# Variable remotepath wird von Skript cloudybm auf Server benötigt.
+newbmexit="$(ssh -p "$serverport" "${serveruser}@${servername}" "export remotepath=\"${serverdir}\"
+                                                                 ${cloudybmdir%/}/cloudybm -B \"$bmkeywords\" \"$bmdesc\" \"$bmuri\"" &>/dev/null; echo $?)"
+
+case $newbmexit in
+    0) scp -pP "$serverport" "${serveruser}@${servername}:${serverdir}/bookmarks.txt" "${HOME}/.mybookmarks/"
+       scpexit=$?
+       if [ "$scpexit" == 0 ]; then
+        echo "${0}: Neues Lesezeichen hinzugefügt und bookmarks.txt kopiert." | tee >(logger --id=$$)
+        notify-send -i "$applypng" Hinweis "Neues Lesezeichen hinzugefügt und bookmarks.txt kopiert."
+       else
+        echo "${0}: Neues Lesezeichen hinzugefügt." | tee >(logger --id=$$)
+        notify-send -i "$applypng" Hinweis "Neues Lesezeichen hinzugefügt."
+       fi
+    ;;
+    2) logger -s --id=$$ "Lesezeichen ist bereits in bookmarks.txt vorhanden."
+       notify-send -i "$applypng" Hinweis "Lesezeichen ist bereits in bookmarks.txt vorhanden."
+    ;;
+    *) logger -s --id=$$ "Lesezeichen konnte nicht hinzugefügt werden (Exitcode: ${newbmexit})."
+       notify-send -i "$closepng" Fehler "Lesezeichen konnte nicht hinzugefügt werden (Exitcode: ${newbmexit})."
+    ;;
+esac

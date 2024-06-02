@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Neues Lesezeichen
+Comment=Fügt neues Bookmark auf dem Server hinzu
+Exec=newbookmark
+Icon=bookmark_add.0
+Categories=Network;Utility;
+Terminal=false
