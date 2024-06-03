@@ -55,13 +55,13 @@ bmuri="$(echo "$newbm" | cut -f3 -d'|')"
 
 # Variable remotepath wird von Skript cloudybm auf Server benötigt.
 newbmexit="$(ssh -p "$serverport" "${serveruser}@${servername}" "export remotepath=\"${serverdir}\"
-                                                                 ${cloudybmdir%/}/cloudybm -B \"$bmkeywords\" \"$bmdesc\" \"$bmuri\"" &>/dev/null; echo $?)"
+                                                                 \"${cloudybmdir%/}\"/cloudybm -B \"$bmkeywords\" \"$bmdesc\" \"$bmuri\"" &>/dev/null; echo $?)"
 
 # Exitcodes von cloudybm werden ausgewertet.
 case $newbmexit in
     0) # Schreibrechte werden erteilt.
        [ ! -w "${clientdir}/bookmarks.txt" ] && chmod -v +w "${clientdir}/bookmarks.txt"
-       scp -pP "$serverport" "${serveruser}@${servername}:${serverdir}/bookmarks.txt" "${clientdir}/"
+       scp -pP "$serverport" "${serveruser}@${servername}:\"${serverdir}\"/bookmarks.txt" "${clientdir}/"
        scpexit=$?
        if [ "$scpexit" == 0 ]; then
         echo "${0}: Neues Lesezeichen hinzugefügt und bookmarks.txt kopiert." | tee >(logger --id=$$)

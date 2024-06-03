@@ -54,9 +54,9 @@ if [ "$serveronline" == "yes" ]; then
  [ $? == 1 ] && exit 1 
 
  if [ "$eing" == '*' ]; then
-  pisuche="$(ssh -p "$serverport" "${serveruser}@${servername}" '/usr/bin/cat '"$serverdir"'/bookmarks.txt' | sed 's/^\(.*\)[\t]\(.*\)[\t]\(.*\)/"\1"\t"\2"\t\3/' | sed 's/""/-/g;s/\(^\|\t\)"/\1/g;s/"\(\t\)/\1/g' | tr '\n' '\t')"
+  pisuche="$(ssh -p "$serverport" "${serveruser}@${servername}" '/usr/bin/cat '\"$serverdir\"'/bookmarks.txt' | sed 's/^\(.*\)[\t]\(.*\)[\t]\(.*\)/"\1"\t"\2"\t\3/' | sed 's/""/-/g;s/\(^\|\t\)"/\1/g;s/"\(\t\)/\1/g' | tr '\n' '\t')"
  else
-  pisuche="$(ssh -p "$serverport" "${serveruser}@${servername}" '/usr/bin/grep -i '"$eing"' '"$serverdir"'/bookmarks.txt' | sed 's/^\(.*\)[\t]\(.*\)[\t]\(.*\)/"\1"\t"\2"\t\3/' | sed 's/""/-/g;s/\(^\|\t\)"/\1/g;s/"\(\t\)/\1/g' | tr '\n' '\t')"
+  pisuche="$(ssh -p "$serverport" "${serveruser}@${servername}" '/usr/bin/grep -i '\"$eing\"' '\"$serverdir\"'/bookmarks.txt' | sed 's/^\(.*\)[\t]\(.*\)[\t]\(.*\)/"\1"\t"\2"\t\3/' | sed 's/""/-/g;s/\(^\|\t\)"/\1/g;s/"\(\t\)/\1/g' | tr '\n' '\t')"
  fi
 
 else
@@ -133,7 +133,7 @@ if [ -n "$pisuche" ]; then
    case $delbmexit in
     0) # Schreibrechte werden erteilt.
        [ ! -w "${clientdir}/bookmarks.txt" ] && chmod -v +w "${clientdir}/bookmarks.txt"
-       scp -pP "$serverport" "${serveruser}@${servername}:${serverdir}/bookmarks.txt" "${clientdir}/"
+       scp -pP "$serverport" "${serveruser}@${servername}:\"${serverdir}\"/bookmarks.txt" "${clientdir}/"
        scpexit=$?
        if [ "$scpexit" == 0 ]; then
         echo "${0}: Lesezeichen gelöscht und bookmarks.txt kopiert." | tee >(logger --id=$$)
