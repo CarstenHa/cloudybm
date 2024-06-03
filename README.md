@@ -42,7 +42,14 @@ Nach der Installation findet man die Programmteile in der Rubrik Zubehör.
 ![Symbol Lesezeichen suchen](hicolor/32x32/apps/mybookmarks.0.svg)
 ![Symbol Neues Lesezeichen](hicolor/32x32/apps/bookmark_add.0.svg)
 
-Über eine Maske können entweder neue Lesezeichen hinzugefügt werden oder nach bestehenden Lesezeichen gesucht bzw. Lesezeichen gelöscht werden. Neue Lesezeichen können nur hinzugefügt werden, wenn der Server erreichbar ist. Eine Kopie der Lesezeichen-Datei (bookmarks.txt) wird nach jeder Änderung auf den Client-Rechner kopiert. Somit sind die Bookmarks auch verfügbar, wenn mal keine Verbindung zum Server besteht.
+Zur Vorgehensweise:  
+Das Skript *searchbookmark* ist für die Suche und das Löschen von Lesezeichen aus der Lesezeichen-Datei bookmarks.txt zuständig. Die Bearbeitung der Datei bookmarks.txt nur auf dem Server möglich. Das Durchsuchen ist auch von der lokalen bookmarks.txt möglich.  
+Das Skript *newbookmark* leitet das Hinzufügen eines neuen Lesezeichens ein. Dabei übergibt das Skript die Daten an das Skript *cloudybm* auf dem Server. Dieses Skript ist dann für das eigentliche Hinzufügen des Lesezeichens zuständig.
+
+Über eine Maske können entweder neue Lesezeichen hinzugefügt werden oder nach bestehenden Lesezeichen gesucht bzw. Lesezeichen gelöscht werden. Neue Lesezeichen können nur hinzugefügt werden, wenn der Server erreichbar ist.  
+![Eingabemaske für neues Lesezeichen](images/neu.png)
+
+Eine Kopie der Lesezeichen-Datei (bookmarks.txt) wird nach jeder Änderung auf den Client-Rechner kopiert. Somit sind die Bookmarks auch verfügbar, wenn mal keine Verbindung zum Server besteht.
 
 Durch Angabe von `*` in der Suchmaske, werden alle Lesezeichen angezeigt.  
 ![Suchmaske mit Asterisk](images/asterisk.png)
