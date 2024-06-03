@@ -5,6 +5,8 @@ serveruser=""
 servername=""
 serverkey=""
 serverport="22"
+# Absoluter Pfad zu bookmarks.txt auf Client
+clientdir=""
 # Absoluter Pfad zu bookmarks.txt auf Server
 serverdir=""
 # Absoluter Pfad zu cloudybm auf Server

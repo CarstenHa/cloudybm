@@ -1,17 +1,13 @@
 #!/bin/bash
 
-#if [ -z "$(type -p ssh-askpass)" ]; then
-# notify-send -t 0 "Fehler" "Das Programm ssh-askpass wird benötigt. Vorgang wird abgebrochen."
-# exit 1
-#fi
-
 # Mit readlink kann man den tatsächlichen Speicherort des Skriptes ermitteln.
 pathofsearchbm="$(dirname $(readlink -f ${0}))"
 if [ -e "${pathofsearchbm}/config/cloudybm.cfg" ]; then
  source "${pathofsearchbm}/config/cloudybm.cfg"
+ clientdir="${clientdir%/}"
 else
- echo "Datei ${pathofsearchbm}/config/cloudybm.cfg existiert nicht."
- echo "Programm wird abgebrochen."
+ notify-send Fehler "Datei ${pathofsearchbm}/config/cloudybm.cfg existiert nicht.\nSkript wird abgebrochen"
+ logger -s --id=$$ "Datei ${pathofsearchbm}/config/cloudybm.cfg existiert nicht. Skript wird abgebrochen"
  exit 1
 fi
 
@@ -25,9 +21,9 @@ if [ -z "$(type -p yad)" ]; then
  logger -s --id=$$ "Yad wurde nicht gefunden. Bitte erst installieren."
  exit 1
 fi
-if [ ! -d "${HOME}/.mybookmarks" ]; then
- mkdir -v "${HOME}/.mybookmarks"
- echo -e "Wichtiger Hinweis:\nDies ist eine Kopie der bookmarks.txt vom Raspi. Die Datei wird nur zum Auslesen genutzt und nur in der Richtung Server => Lokal synchronisiert. Bei Änderungen bitte die Datei auf dem Raspi modifizieren.\nManuelle Änderungen an der Datei in diesem Ordner werden nicht berücksichtigt\nund ggf. beim Hinzufügen eines neuen Lesezeichens überschrieben." >"${HOME}/.mybookmarks/README"
+if [ ! -d "${clientdir}" ]; then
+ mkdir -v "${clientdir}"
+ echo -e "Wichtiger Hinweis:\nDies ist eine Kopie der bookmarks.txt vom Server. Die Datei wird nur zum Auslesen genutzt und nur in der Richtung Server => Lokal synchronisiert. Bei Änderungen bitte die Datei auf dem Server modifizieren.\nManuelle Änderungen an der Datei in diesem Ordner werden nicht berücksichtigt\nund ggf. beim Hinzufügen eines neuen Lesezeichens überschrieben." >"${clientdir}/README"
 fi
 
 echo "Verfügbarkeit des Rechners wird überprüft ..."
@@ -39,7 +35,7 @@ if [ "$serverreturn" == 0 ]; then
  serveronline="yes"
  serverdir="${serverdir%/}"
  [ -z "$(ssh-add -l | grep "$(ssh-keygen -lf "$serverkey" | cut -f2 -d' ')")" -a -n "$serverkey" ] && ssh-add "$serverkey"
- scp -pP "$serverport" "${serveruser}@${servername}:${serverdir}/bookmarks.txt" "${HOME}/.mybookmarks/"
+ scp -pP "$serverport" "${serveruser}@${servername}:${serverdir}/bookmarks.txt" "${clientdir}/"
 else
  echo "${0}: ${servername} ist nicht erreichbar. Es wird die lokale Bookmark-Datei ausgewertet." | tee >(logger --id=$$)
 fi
@@ -73,16 +69,16 @@ else
  [ $? == 1 ] && exit 1 
 
  if [ "$eing" == '*' ]; then
-  pisuche="$(cat "${HOME}/.mybookmarks/bookmarks.txt" | sed 's/^\(.*\)[\t]\(.*\)[\t]\(.*\)/"\1"\t"\2"\t\3/' | sed 's/""/-/g;s/\(^\|\t\)"/\1/g;s/"\(\t\)/\1/g' | tr '\n' '\t')"
+  pisuche="$(cat "${clientdir}/bookmarks.txt" | sed 's/^\(.*\)[\t]\(.*\)[\t]\(.*\)/"\1"\t"\2"\t\3/' | sed 's/""/-/g;s/\(^\|\t\)"/\1/g;s/"\(\t\)/\1/g' | tr '\n' '\t')"
  else
-  pisuche="$(grep -i "$eing" "${HOME}/.mybookmarks/bookmarks.txt" | sed 's/^\(.*\)[\t]\(.*\)[\t]\(.*\)/"\1"\t"\2"\t\3/' | sed 's/""/-/g;s/\(^\|\t\)"/\1/g;s/"\(\t\)/\1/g' | tr '\n' '\t')"
+  pisuche="$(grep -i "$eing" "${clientdir}/bookmarks.txt" | sed 's/^\(.*\)[\t]\(.*\)[\t]\(.*\)/"\1"\t"\2"\t\3/' | sed 's/""/-/g;s/\(^\|\t\)"/\1/g;s/"\(\t\)/\1/g' | tr '\n' '\t')"
  fi
 
 fi
 
 if [ -n "$pisuche" ]; then
 
-  # Löschen-Button wird nur angezeigt, wenn Raspi erreichbar ist.
+  # Löschen-Button wird nur angezeigt, wenn Server erreichbar ist.
   if [ "$serveronline" == "yes" ]; then
     #--print-all (Kompletter Inhalt)
     #--print-column=3 (Nur 3. Spalte aus ausgewählter Zeile)
@@ -126,7 +122,7 @@ if [ -n "$pisuche" ]; then
    # Öffnen der Seite in Standardanwendung.
    nohup xdg-open "$bmuri" &
  
-  # Löschung eines Bookmarks funktioniert nur, wenn Raspi erreichbar ist.
+  # Löschung eines Bookmarks funktioniert nur, wenn Server erreichbar ist.
   elif [ "$bmauswexit" == 2 ]; then
 
    ausg="$(printf '%s\t%s\t%s' "$bmwoerter" "$bmdesc" "$bmuri")"
@@ -135,17 +131,19 @@ if [ -n "$pisuche" ]; then
 
    # Neue Datei wird vom Server heruntergeladen.
    case $delbmexit in
-    0) scp -pP "$serverport" "${serveruser}@${servername}:${serverdir}/bookmarks.txt" "${HOME}/.mybookmarks/"
+    0) scp -pP "$serverport" "${serveruser}@${servername}:${serverdir}/bookmarks.txt" "${clientdir}/"
        scpexit=$?
        if [ "$scpexit" == 0 ]; then
         echo "${0}: Lesezeichen gelöscht und bookmarks.txt kopiert." | tee >(logger --id=$$)
         notify-send -i "$applypng" Hinweis "Lesezeichen gelöscht und bookmarks.txt kopiert."
+        # Schreibrechte werden ggf. entzogen.
+        [ -w "${clientdir}/bookmarks.txt" ] && chmod -v -w "${clientdir}/bookmarks.txt"
        else
         echo "${0}: Lesezeichen gelöscht aber Download hat nicht geklappt." | tee >(logger --id=$$)
         notify-send -i "$applypng" Hinweis "Lesezeichen gelöscht aber Download hat nicht geklappt."
        fi
     ;;
-    *) logger -s --id=$$ "Lesezeichen konnte nicht gelöscht werden. Zur Debuggen auf Raspi bitte journalctl -r aufrufen."
+    *) logger -s --id=$$ "Lesezeichen konnte nicht gelöscht werden. Zur Debuggen auf Server bitte journalctl -r aufrufen."
        notify-send -i "$closepng" Fehler "Lesezeichen konnte nicht gelöscht werden."
     ;;
    esac

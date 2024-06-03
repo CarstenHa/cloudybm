@@ -42,6 +42,20 @@ do
    esac
 done
 
+# Abhängigkeiten werden ggf. installiert.
+echo "Abhängigkeiten werden geprüft ..."
+if [ -z "$(type -p zenity)" ]; then
+ echo "Zenity wurde nicht gefunden und wird jetzt installiert ..."
+ sudo apt install zenity
+fi
+if [ -z "$(type -p yad)" ]; then
+ echo "Yad wurde nicht gefundenund wird jetzt installiert ..."
+ sudo apt install yad
+fi
+if [ -z "$(type -p ssh-askpass)" ]; then
+ echo -e "HINWEIS:\nssh-askpass ist nicht installiert. Kann installiert werden mit:\nsudo apt install ssh-askpass\noder:\nsudo apt install ssh-askpass-gnome"
+fi
+
 OLDIFS="$IFS"
 IFS=':'
 for dir in $PATH; do
@@ -72,7 +86,7 @@ echo "4. .desktop-Dateien in: ${HOME}/.local/share/applications/"
 echo "Für die Punkte 2-4 werden ausschließlich Symlinks angelegt."
 read -p "Weiter mit [ENTER]. Abbruch mit [STRG]+[C]"
 
-# cloudybm auf Server kopieren.
+# cloudybm auf Server kopieren und Lesezeichen-Verzeichnis auf Server ggf. erstellen.
 if [ -e "./config/cloudybm.cfg" ]; then
 
  source "./config/cloudybm.cfg"
@@ -85,7 +99,7 @@ if [ -e "./config/cloudybm.cfg" ]; then
   if [ "$serverreturn" == 0 ]; then
    echo "${0}: ${servername} ist erreichbar." | tee >(logger --id=$$)
    [ -z "$(ssh-add -l | grep "$(ssh-keygen -lf "$serverkey" | cut -f2 -d' ')")" -a -n "$serverkey" ] && ssh-add "$serverkey"
-   ssh -p "$serverport" "${serveruser}@${servername}" 'mkdir -pv '"$serverdir"''
+   ssh -p "$serverport" "${serveruser}@${servername}" '[ ! -d "'"$serverdir"'" ] && mkdir -pv '"$serverdir"' || echo "Verzeichnis '"$serverdir"' existiert bereits."'
    scp -pP "$serverport" "./cloudybm/" "${serveruser}@${servername}:${cloudybmdir}/"
    scpexit="$?"
    if [ "$scpexit" == 0 ]; then
