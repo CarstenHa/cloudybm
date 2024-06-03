@@ -61,6 +61,11 @@ Durch Angabe von `*` in der Suchmaske, werden alle Lesezeichen angezeigt.
 Ob die Serverdatei oder die lokale Lesezeichen-Datei gerade durchsucht wird, kann man übrigens am Fensterkopf erkennen:  
 ![Lokale Suche](images/localsearch.png)
 
+Weitere Suchmusterbeispiele:  
+wort1\\|wort2 : Findet Einträge mit wort1 oder wort2  
+teil1.*teil2 : Findet String von teil1 bis teil2 (auch Spaltenübergreifend)  
+go.gle : Findet Einträge mit goigle, goagle, gougle, usw.  
+
 Durch Doppelklick werden Links in der Standardanwendung (i.d.R. der Browser)  geöffnet.  
 
 Weitere Terminal-Beispiele:  
