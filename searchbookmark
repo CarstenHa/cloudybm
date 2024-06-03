@@ -131,17 +131,19 @@ if [ -n "$pisuche" ]; then
 
    # Neue Datei wird vom Server heruntergeladen.
    case $delbmexit in
-    0) scp -pP "$serverport" "${serveruser}@${servername}:${serverdir}/bookmarks.txt" "${clientdir}/"
+    0) # Schreibrechte werden erteilt.
+       [ ! -w "${clientdir}/bookmarks.txt" ] && chmod -v +w "${clientdir}/bookmarks.txt"
+       scp -pP "$serverport" "${serveruser}@${servername}:${serverdir}/bookmarks.txt" "${clientdir}/"
        scpexit=$?
        if [ "$scpexit" == 0 ]; then
         echo "${0}: Lesezeichen gelöscht und bookmarks.txt kopiert." | tee >(logger --id=$$)
         notify-send -i "$applypng" Hinweis "Lesezeichen gelöscht und bookmarks.txt kopiert."
-        # Schreibrechte werden ggf. entzogen.
-        [ -w "${clientdir}/bookmarks.txt" ] && chmod -v -w "${clientdir}/bookmarks.txt"
        else
         echo "${0}: Lesezeichen gelöscht aber Download hat nicht geklappt." | tee >(logger --id=$$)
         notify-send -i "$applypng" Hinweis "Lesezeichen gelöscht aber Download hat nicht geklappt."
        fi
+       # Schreibrechte werden wieder entzogen.
+       [ -w "${clientdir}/bookmarks.txt" ] && chmod -v -w "${clientdir}/bookmarks.txt"
     ;;
     *) logger -s --id=$$ "Lesezeichen konnte nicht gelöscht werden. Zur Debuggen auf Server bitte journalctl -r aufrufen."
        notify-send -i "$closepng" Fehler "Lesezeichen konnte nicht gelöscht werden."
