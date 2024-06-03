@@ -12,9 +12,9 @@ Repository klonen:
 https://github.com/CarstenHa/cloudybm
 ```
 
-config-Datei im Ordner `cloudybm/config` umbenennen:
+config-Datei im Ordner `cloudybm/config` kopieren:
 ```bash
-mv cloudybm/config/cloudybm.bsp cloudybm/config/cloudybm.cfg
+cp cloudybm/config/cloudybm.bsp cloudybm/config/cloudybm.cfg
 ```
 und anschließend ausfüllen. Die folgende Installation mit install.sh funktioniert nur mit ausgefüllter cloudybm.cfg.  
 

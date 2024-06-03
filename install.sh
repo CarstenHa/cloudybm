@@ -100,7 +100,7 @@ if [ -e "./config/cloudybm.cfg" ]; then
    echo "${0}: ${servername} ist erreichbar." | tee >(logger --id=$$)
    [ -z "$(ssh-add -l | grep "$(ssh-keygen -lf "$serverkey" | cut -f2 -d' ')")" -a -n "$serverkey" ] && ssh-add "$serverkey"
    ssh -p "$serverport" "${serveruser}@${servername}" '[ ! -d "'"$serverdir"'" ] && mkdir -pv '"$serverdir"' || echo "Verzeichnis '"$serverdir"' existiert bereits."'
-   scp -pP "$serverport" "./cloudybm/" "${serveruser}@${servername}:${cloudybmdir}/"
+   scp -pP "$serverport" "./cloudybm" "${serveruser}@${servername}:${cloudybmdir}/"
    scpexit="$?"
    if [ "$scpexit" == 0 ]; then
     echo "cloudybm erfolgreich auf Server kopiert."
