@@ -7,6 +7,10 @@ Ein kleines Linux-Tool, um Lesezeichen auf einem entfernten Rechner via SSH zu v
 Für dieses Tool wird eine bestehende SSH-Verbindung vorausgesetzt. Für die Einrichtung von SSH gibt es sehr gute Anleitungen im Internet. Eine ist zum Beispiel:  
 <https://wiki.ubuntuusers.de/SSH/>  
 
+Außerdem wird das Installieren von *ssh-askpass* (oder einem ähnlichen Paket wie *ssh-askpass-gnome*, etc.) empfohlen.
+
+Die folgenden Schritte sind auf dem Client-Rechner auszuführen:
+
 Repository klonen:  
 ```bash
 https://github.com/CarstenHa/cloudybm
@@ -43,7 +47,7 @@ Nach der Installation findet man die Programmteile in der Rubrik Zubehör.
 ![Symbol Neues Lesezeichen](hicolor/32x32/apps/bookmark_add.0.svg)
 
 Zur Vorgehensweise:  
-Das Skript *searchbookmark* ist für die Suche und das Löschen von Lesezeichen aus der Lesezeichen-Datei bookmarks.txt zuständig. Die Bearbeitung der Datei bookmarks.txt nur auf dem Server möglich. Das Durchsuchen ist auch von der lokalen bookmarks.txt möglich.  
+Das Skript *searchbookmark* ist für die Suche und das Löschen von Lesezeichen aus der Lesezeichen-Datei bookmarks.txt zuständig. Die Bearbeitung der Datei bookmarks.txt ist nur auf dem Server möglich. Das Durchsuchen ist auch von der lokalen bookmarks.txt möglich.  
 Das Skript *newbookmark* leitet das Hinzufügen eines neuen Lesezeichens ein. Dabei übergibt das Skript die Daten an das Skript *cloudybm* auf dem Server. Dieses Skript ist dann für das eigentliche Hinzufügen des Lesezeichens zuständig.
 
 Über eine Maske können entweder neue Lesezeichen hinzugefügt werden oder nach bestehenden Lesezeichen gesucht bzw. Lesezeichen gelöscht werden. Neue Lesezeichen können nur hinzugefügt werden, wenn der Server erreichbar ist.  
