@@ -30,7 +30,7 @@ if [ "$serverreturn" == 0 ]; then
  serverdir="${serverdir%/}"
  [ -z "$(ssh-add -l | grep "$(ssh-keygen -lf "$serverkey" | cut -f2 -d' ')")" -a -n "$serverkey" ] && ssh-add "$serverkey"
  # Server-Verzeichnis wird geprüft.
- ssh -p "$serverport" "${serveruser}@${servername}" '[ ! -d "'"$serverdir"'" ] && mkdir -pv '"$serverdir"''
+ ssh -p "$serverport" "${serveruser}@${servername}" '[ ! -d "'"$serverdir"'" ] && mkdir -pv "'"$serverdir"'"'
 else
  notify-send -i "$closepng" Fehler "${servername} ist nicht erreichbar."
  logger -s --id=$$ "${servername} ist nicht erreichbar."
@@ -61,7 +61,7 @@ newbmexit="$(ssh -p "$serverport" "${serveruser}@${servername}" "export remotepa
 case $newbmexit in
     0) # Schreibrechte werden erteilt.
        [ ! -w "${clientdir}/bookmarks.txt" ] && chmod -v +w "${clientdir}/bookmarks.txt"
-       scp -pP "$serverport" "${serveruser}@${servername}:\"${serverdir}\"/bookmarks.txt" "${clientdir}/"
+       scp -pP "$serverport" "${serveruser}@${servername}":"\"${serverdir}\"/bookmarks.txt" "${clientdir}/"
        scpexit=$?
        if [ "$scpexit" == 0 ]; then
         echo "${0}: Neues Lesezeichen hinzugefügt und bookmarks.txt kopiert." | tee >(logger --id=$$)

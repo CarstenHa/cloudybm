@@ -35,7 +35,7 @@ if [ "$serverreturn" == 0 ]; then
  serveronline="yes"
  serverdir="${serverdir%/}"
  [ -z "$(ssh-add -l | grep "$(ssh-keygen -lf "$serverkey" | cut -f2 -d' ')")" -a -n "$serverkey" ] && ssh-add "$serverkey"
- scp -pP "$serverport" "${serveruser}@${servername}:${serverdir}/bookmarks.txt" "${clientdir}/"
+ scp -pP "$serverport" "${serveruser}@${servername}":"\"${serverdir}\"/bookmarks.txt" "${clientdir}/"
 else
  echo "${0}: ${servername} ist nicht erreichbar. Es wird die lokale Bookmark-Datei ausgewertet." | tee >(logger --id=$$)
 fi
@@ -133,7 +133,7 @@ if [ -n "$pisuche" ]; then
    case $delbmexit in
     0) # Schreibrechte werden erteilt.
        [ ! -w "${clientdir}/bookmarks.txt" ] && chmod -v +w "${clientdir}/bookmarks.txt"
-       scp -pP "$serverport" "${serveruser}@${servername}:\"${serverdir}\"/bookmarks.txt" "${clientdir}/"
+       scp -pP "$serverport" "${serveruser}@${servername}":"\"${serverdir}\"/bookmarks.txt" "${clientdir}/"
        scpexit=$?
        if [ "$scpexit" == 0 ]; then
         echo "${0}: Lesezeichen gelöscht und bookmarks.txt kopiert." | tee >(logger --id=$$)
