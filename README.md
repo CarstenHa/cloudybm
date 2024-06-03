@@ -1,52 +1,75 @@
-# lastmod
+# cloudybm
 
-Ein kleines Linux-Tool, zur Suche von neuen bzw. geänderten Dateien rekursiv ab dem aktuellen Verzeichnis.
+Ein kleines Linux-Tool, um Lesezeichen auf einem entfernten Rechner via SSH zu verwalten.
 
 **Vorbereitung**
 
-Repo klonen:  
+Für dieses Tool wird eine bestehende SSH-Verbindung vorausgesetzt. Für die Einrichtung von SSH gibt es sehr gute Anleitungen im Internet. Eine ist zum Beispiel:  
+<https://wiki.ubuntuusers.de/SSH/>  
+
+Repository klonen:  
 ```bash
-git clone https://codeberg.org/CarstenHa/lastmod
+https://github.com/CarstenHa/cloudybm
 ```
+
+config-Datei im Ordner `cloudybm/config` umbenennen:
+```bash
+mv cloudybm/config/cloudybm.bsp cloudybm/config/cloudybm.cfg
+```
+und anschließend ausfüllen. Die folgende Installation mit install.sh funktioniert nur mit ausgefüllter cloudybm.cfg.  
 
 Installieren:  
 ```bash
-cd lastmod && ./install.sh
+cd cloudybm && ./install.sh
 ```
 
 Deinstallieren:  
 ```bash
 ./install.sh -u
 ```
+Hinweis:  
+Bei der Deinstallation werden nur die lokalen Symlinks auf die Repo-Dateien entfernt. Der Repository-Ordner, die ggf. bei der Installation erstellten Ordner sowie Dateien und Ordner auf dem Server werden nicht gelöscht.
 
-Das Programm einfach mit:  
+Das Programm kann einfach mit:  
 ```bash
-cd /path/to/lastmod && git pull
+cd /path/to/cloudybm && git pull
 ```
-aktualisieren.
+aktualisiert werden.
 
 **Nutzung**
 
-Hilfe:  
+Nach der Installation findet man die Programmteile in der Rubrik Zubehör.  
+![Symbol Lesezeichen suchen](hicolor/32x32/apps/mybookmarks.0.svg)
+![Symbol Neues Lesezeichen](hicolor/32x32/apps/bookmark_add.0.svg)
+
+Über eine Maske können entweder neue Lesezeichen hinzugefügt werden oder nach bestehenden Lesezeichen gesucht bzw. Lesezeichen gelöscht werden. Neue Lesezeichen können nur hinzugefügt werden, wenn der Server erreichbar ist. Eine Kopie der Lesezeichen-Datei (bookmarks.txt) wird nach jeder Änderung auf den Client-Rechner kopiert. Somit sind die Bookmarks auch verfügbar, wenn mal keine Verbindung zum Server besteht.
+
+Durch Angabe von `*` in der Suchmaske, werden alle Lesezeichen angezeigt.  
+![Suchmaske mit Asterisk](images/asterisk.png)
+
+Ob die Serverdatei oder die lokale Lesezeichen-Datei gerade durchsucht wird, kann man übrigens am Fensterkopf erkennen:  
+![Lokale Suche](images/localsearch.png)
+
+Durch Doppelklick werden Links in der Standardanwendung (i.d.R. der Browser)  geöffnet.  
+
+Weitere Terminal-Beispiele:  
 ```bash
-lastmod -h
+# Aufrufen der Hilfe von cloudybm auf Remote-Rechner
+/path/to/cloudybm -h
+# Hinzufügen eines Lesezeichens auf Remote-Rechner
+/path/to/cloudybm -B "keywort1,keywort2,etc." "Hier steht die Beschreibung" "https://example.com"
+# oder (ohne Schlüsselwörter und Beschreibung):
+/path/to/cloudybm -B "" "" "https://example.com"
+
 ```
+**Lizenzhinweise**
 
-Beispiele:  
-```bash
-# Ausgabe auf Bildschirm.
-lastmod
-# Ausgabe der neuen bzw. geänderten Dateien vom Vortag (0:00 Uhr)
-# bis zum aktuellen Zeitpunkt
-lastmod 2
-# Ausgabe auf Bildschirm und schreibt das Ergebnis zusätzlich in eine Datei.
-lastmod -o path/to/file.txt
-```
-
-Beispielansicht:
-
-![Beispielansicht](example.png)
+SVG-Icons in den Unterordnern von hicolor sind von:
+Fonticons, Inc. (<https://fontawesome.com>)  
+SVG-Icons are licensed CC BY 4.0 License (<https://creativecommons.org/licenses/by/4.0/>)  
+Creative Commons Attribution 4.0 International License  
+Modified by Carsten Jacob (<https://github.com/CarstenHa/cloudybm>)
 
 Viel Spaß mit diesem kleinen Programm :)
 
-<https://codeberg.org/CarstenHa/lastmod>
+<https://github.com/CarstenHa/cloudybm>

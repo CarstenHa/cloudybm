@@ -153,6 +153,6 @@ if [ -n "$pisuche" ]; then
 else
 
   logger -s --id=$$ "Nichts passendes gefunden."
-  notify-send -i "$closepng" Fehler "Nichts passendes gefunden."
+  notify-send -i "$closepng" Hinweis "Nichts passendes gefunden."
 
 fi
