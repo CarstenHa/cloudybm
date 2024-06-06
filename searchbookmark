@@ -47,6 +47,7 @@ IFS=$'\t'
 if [ "$serveronline" == "yes" ]; then
 
  eing="$(zenity --entry \
+                --window-icon="${pathofsearchbm}/hicolor/16x16/apps/mybookmarks.0.svg" \
                 --title="Cloud Bookmark-Suche" \
                 --text="Bitte Suchwort eingeben:" \
  )"
@@ -62,6 +63,7 @@ if [ "$serveronline" == "yes" ]; then
 else
 
  eing="$(zenity --entry \
+                --window-icon="${pathofsearchbm}/hicolor/16x16/apps/mybookmarks.0.svg" \
                 --title="Lokale Bookmark-Suche" \
                 --text="Bitte Suchwort eingeben:" \
  )"
@@ -86,28 +88,30 @@ if [ -n "$pisuche" ]; then
     result=$(yad --height=420 \
            --width=600 \
            --list \
+           --window-icon="${pathofsearchbm}/hicolor/16x16/apps/mybookmarks.0.svg" \
            --title="Bitte Lesezeichen auswählen" \
            --column="Schlüsselwörter" \
            --column="Beschreibung" \
            --column="URI" \
            --print-column=0 \
            --separator='\t' \
-           --button="Öffnen:0" \
-           --button="Abbrechen:1" \
            --button="Löschen:2" \
+           --button="Abbrechen:1" \
+           --button="Öffnen:0" \
            $pisuche)
   else
     result=$(yad --height=420 \
            --width=600 \
            --list \
+           --window-icon="${pathofsearchbm}/hicolor/16x16/apps/mybookmarks.0.svg" \
            --title="Bitte Lesezeichen auswählen" \
            --column="Schlüsselwörter" \
            --column="Beschreibung" \
            --column="URI" \
            --print-column=0 \
            --separator='\t' \
-           --button="Öffnen:0" \
            --button="Abbrechen:1" \
+           --button="Öffnen:0" \
            $pisuche)
   fi
     
@@ -139,8 +143,8 @@ if [ -n "$pisuche" ]; then
         echo "${0}: Lesezeichen gelöscht und bookmarks.txt kopiert." | tee >(logger --id=$$)
         notify-send -i "$applypng" Hinweis "Lesezeichen gelöscht und bookmarks.txt kopiert."
        else
-        echo "${0}: Lesezeichen gelöscht aber Download hat nicht geklappt." | tee >(logger --id=$$)
-        notify-send -i "$applypng" Hinweis "Lesezeichen gelöscht aber Download hat nicht geklappt."
+        logger -s --id=$$ "Lesezeichen gelöscht aber Download hat nicht geklappt."
+        notify-send -i "$closepng" Fehler "Lesezeichen gelöscht aber Download hat nicht geklappt."
        fi
        # Schreibrechte werden wieder entzogen.
        [ -w "${clientdir}/bookmarks.txt" ] && chmod -v -w "${clientdir}/bookmarks.txt"

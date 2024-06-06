@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 48 48"
+   version="1.1"
+   id="svg4"
+   sodipodi:docname="cldybm.svg"
+   inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
+   width="48"
+   height="48"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs8" />
+  <sodipodi:namedview
+     id="namedview6"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     showgrid="true"
+     inkscape:zoom="6.9962546"
+     inkscape:cx="22.297645"
+     inkscape:cy="24.012848"
+     inkscape:window-width="1600"
+     inkscape:window-height="837"
+     inkscape:window-x="0"
+     inkscape:window-y="28"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg4"
+     lock-margins="true"
+     viewbox-width="124.6"
+     showguides="false"
+     width="64px"
+     inkscape:snap-global="false">
+    <inkscape:grid
+       type="xygrid"
+       id="grid995" />
+  </sodipodi:namedview>
+  <!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. -->
+  <g
+     id="g993"
+     transform="matrix(0.1875,0,0,0.1875,0.02215334,0.23994594)">
+    <path
+       id="path2"
+       style="fill:#666666;fill-opacity:1;stroke-width:0.464109"
+       d="m 63.318359,8.8828125 c -12.298879,0 -22.277343,9.9765135 -22.277343,22.2753905 V 172.61328 a 37.545876,37.545876 0 0 1 30.193359,-15.38867 37.545876,37.545876 0 0 1 37.544925,37.54687 37.545876,37.545876 0 0 1 -2.72657,13.81055 l 24.09766,-14.05664 89.10938,51.98047 V 31.158203 c 0,-12.298877 -9.97846,-22.2753905 -22.27735,-22.2753905 z M 120.76172,35.248047 c 2.36453,0.02121 4.76133,0.180069 7.18164,0.486328 26.046,3.297548 47.37136,24.473742 50.85742,50.494141 2.04444,15.297754 -1.77379,29.654154 -9.51367,41.144534 l 34.03516,34.03515 c 4.43564,4.43578 4.43572,11.65831 -0.002,16.10547 -4.44146,4.44146 -11.64252,4.44146 -16.08398,0 l -34.03711,-34.03515 c -11.48753,7.74101 -25.84677,11.55783 -41.14453,9.51367 C 86.031608,149.52318 64.855043,128.18043 61.556641,102.12305 56.962577,65.818422 85.293808,34.929794 120.76172,35.248047 Z m -0.8086,22.744141 c -20.069064,0 -36.396479,16.327425 -36.396479,36.396484 0,20.074778 16.327415,36.396488 36.396479,36.396488 20.06906,0 36.39649,-16.32741 36.39649,-36.396488 0,-20.069059 -16.32743,-36.396484 -36.39649,-36.396484 z M 41.041016,216.92969 v 29.57617 l 24.96289,-14.5625 a 37.545876,37.545876 0 0 1 -24.96289,-15.01367 z" />
+    <path
+       d="m 103.55922,194.53406 c 0,17.94269 -14.557298,32.49998 -32.500005,32.49998 -17.942707,0 -32.499997,-14.55729 -32.499997,-32.49998 0,-17.94272 14.55729,-32.50001 32.499997,-32.50001 17.942707,0 32.500005,14.55729 32.500005,32.50001 z M 81.14775,184.76148 67.448105,198.46113 60.97067,191.9837 c -1.399303,-1.42187 -3.701384,-1.42187 -5.100688,0 -1.421879,1.3993 -1.421879,3.70139 0,5.1007 l 9.027774,9.02778 c 1.399304,1.42187 3.701385,1.42187 5.100698,0 l 16.249994,-16.25 c 1.421879,-1.39931 1.421879,-3.7014 0,-5.1007 -1.399304,-1.42187 -3.701385,-1.42187 -5.100698,0 z"
+       id="path2-1"
+       sodipodi:nodetypes="ssssscccccccccc"
+       style="fill:#1d8f24;fill-opacity:1;stroke-width:0.225694" />
+  </g>
+</svg>

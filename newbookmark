@@ -38,7 +38,8 @@ else
  exit 1
 fi
 
-newbm="$(zenity --forms --title="Neues Lesezeichen hinzufügen" \
+newbm="$(zenity --forms \
+				--title="Neues Lesezeichen hinzufügen" \
 				--text="Bitte Informationen eingeben" \
 				--separator="|" \
 				--add-entry="Schlüsselwörter (bitte mit Komma trennen)" \
@@ -66,17 +67,15 @@ case $newbmexit in
        if [ "$scpexit" == 0 ]; then
         echo "${0}: Neues Lesezeichen hinzugefügt und bookmarks.txt kopiert." | tee >(logger --id=$$)
         notify-send -i "$applypng" Hinweis "Neues Lesezeichen hinzugefügt und bookmarks.txt kopiert."
-        # Schreibrechte werden ggf. entzogen.
-        [ -w "${clientdir}/bookmarks.txt" ] && chmod -v -w "${clientdir}/bookmarks.txt"
        else
-        echo "${0}: Neues Lesezeichen hinzugefügt aber Download hat nicht geklappt." | tee >(logger --id=$$)
-        notify-send -i "$applypng" Hinweis "Neues Lesezeichen hinzugefügt aber Download hat nicht geklappt."
+        logger -s --id=$$ "Neues Lesezeichen hinzugefügt aber Download hat nicht geklappt."
+        notify-send -i "$closepng" Fehler "Neues Lesezeichen hinzugefügt aber Download hat nicht geklappt."
        fi
        # Schreibrechte werden wieder entzogen.
        [ -w "${clientdir}/bookmarks.txt" ] && chmod -v -w "${clientdir}/bookmarks.txt"
     ;;
-    2) logger -s --id=$$ "Lesezeichen ist bereits in bookmarks.txt vorhanden."
-       notify-send -i "$applypng" Hinweis "Lesezeichen ist bereits in bookmarks.txt vorhanden."
+    2) logger -s --id=$$ "Lesezeichen ist bereits in bookmarks.txt vorhanden (Exitcode: ${newbmexit})."
+       notify-send -i "$closepng" Hinweis "Lesezeichen ist bereits in bookmarks.txt vorhanden (Exitcode: ${newbmexit})."
     ;;
     *) logger -s --id=$$ "Lesezeichen konnte nicht hinzugefügt werden (Exitcode: ${newbmexit})."
        notify-send -i "$closepng" Fehler "Lesezeichen konnte nicht hinzugefügt werden (Exitcode: ${newbmexit})."

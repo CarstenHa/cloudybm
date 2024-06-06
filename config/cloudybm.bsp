@@ -1,6 +1,6 @@
-# Icon-Datei (z.B. aus Unterordner /usr/share/icons/)
-applypng="/usr/share/icons/Yaru/32x32/actions/gtk-apply.png"
-closepng="/usr/share/icons/Yaru/32x32/actions/gtk-close.png"
+# Weitere Icon-Dateien siehe z.B. aus Unterordner von /usr/share/icons/
+applypng="${pathofsearchbm}/hicolor/48x48/actions/cldybmp.svg"
+closepng="${pathofsearchbm}/hicolor/48x48/actions/cldybmn.svg"
 serveruser=""
 servername=""
 serverkey=""
