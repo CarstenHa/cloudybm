@@ -80,10 +80,11 @@ Weitere Terminal-Beispiele:
 ```
 **Exitcodes**
 
-0 Erfolgreiches Hinzufügen eines Lesezeichens.  
-1 Variable remotepath ist leer. Die Datei bookmarks.txt konnte nicht eindeutig ermittelt werden.  
-2 URI ist bereits in bookmarks.txt vorhanden. Es wird kein neues Lesezeichen eingetragen.  
-3 Keine gültige URI. Es werden nur Einträge aufgenommen, die die Zeichen `://` enthalten.
+0 - Erfolgreiches Hinzufügen eines Lesezeichens.  
+1 - Variable remotepath ist leer. Die Datei bookmarks.txt konnte nicht eindeutig ermittelt werden.  
+2 - URI ist bereits in bookmarks.txt vorhanden. Es wird kein neues Lesezeichen eingetragen.  
+3 - Keine gültige URI. Es werden nur Einträge aufgenommen, die die Zeichen `://` enthalten.  
+4 - Kein Lesezeichen gefunden.
 
 **Lizenzhinweise**
 

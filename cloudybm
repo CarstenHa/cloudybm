@@ -17,6 +17,7 @@ Skript zum Hinzufügen von Lesezeichen.
 
 $0 [-h]
 $0 [-B] [KEYWORDS[,...]] [DESC] URI
+$0 [-s] SUCHWORT
 
 Optionen:
 
@@ -32,15 +33,24 @@ Optionen:
 
 	ruft diese Hilfe auf.
 
+   -s SUCHWORT
+
+	durchsucht bookmarks.txt auf dem Server und gibt Ergebnis im Terminal aus.
+	Beispiele:
+	$0 -s "wort1\|wort2" : Findet Einträge mit wort1 oder wort2
+	$0 -s "teil1.*teil2" : Findet String von teil1 bis teil2 (auch Spaltenübergreifend)
+	$0 -s "go.gle"       : Findet Einträge mit goigle, goagle, gougle, usw.
+
 Exitcodes:
 
-0 - Erfolgreiches Hinzufügen eines Lesezeichens.
+0 - Keine Fehler (z.B. Erfolgreiches Hinzufügen eines Lesezeichens.)
 1 - Variable remotepath ist leer.
     Die Datei bookmarks.txt konnte nicht eindeutig ermittelt werden.
 2 - URI ist bereits in bookmarks.txt vorhanden.
     Es wird kein neues Lesezeichen eingetragen.
 3 - Keine gültige URI.
     Es werden nur Einträge aufgenommen, die die Zeichen :// enthalten.
+4 - Kein Lesezeichen gefunden.
 
 EOU
 }
@@ -111,8 +121,24 @@ impbmfile() {
      sed -i '/^$/d' "${remotepath}/bookmarks.txt"
 
 }
+pprintbm() {
+if [ -n "$blist" ]; then
+ bmcounter=0
+ while IFS= read -r sbm; do
+  let bmcounter++
+  printf "\e[1mBookmark %.5d  :\e[0m DB-POS %d\n" "$bmcounter" "$(echo "$sbm" | cut -f1 | grep -o '^[0-9]*')"
+  printf 'Schlüsselwörter : %s\n' "$(echo "$sbm" | cut -f1 | sed 's/^[0-9]*://')"
+  printf 'Beschreibung    : %s\n' "$(echo "$sbm" | cut -f2)"
+  printf 'URI             : %s\n' "$(echo "$sbm" | cut -f3)"
+  printf %"$(tput cols)"s | tr " " "-"
+ done <<<"$blist"
+else
+ echo "Kein Lesezeichen gefunden."
+ venexit=4
+fi
+}
 
-while getopts Bh opt; do
+while getopts Bhs: opt; do
  case $opt in
    B) # Neues Lesezeichen hinzufügen
       shift $(("$OPTIND"-1))
@@ -126,6 +152,26 @@ while getopts Bh opt; do
    ;;
    h) usage
       exit
+   ;;
+   s) # Bookmarks durchsuchen
+      blist="$(grep -ni "${OPTARG}" "${remotepath}/bookmarks.txt")"
+
+      # Formatierte Ausgabe bei aktivem Terminal.
+      if [ "$(tty -s; echo $?)" == 0 ]; then
+
+       pprintbm
+
+      else
+
+       if [ -n "$blist" ]; then
+        echo "$blist"
+       else
+        echo "Kein Lesezeichen gefunden."
+        venexit=4
+       fi
+
+      fi
+   ;;
  esac
 done
 
