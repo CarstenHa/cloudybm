@@ -68,14 +68,18 @@ Weitere Suchmusterbeispiele:
 
 Durch Doppelklick werden Links in der Standardanwendung (i.d.R. der Browser)  geöffnet.  
 
-Weitere Terminal-Beispiele:  
+Terminal-Beispiele mit cloudybm (wenn man mit SSH auf dem Server ist):  
 ```bash
-# Aufrufen der Hilfe von cloudybm auf Remote-Rechner
+# Aufrufen der Hilfe von cloudybm
 /path/to/cloudybm -h
-# Hinzufügen eines Lesezeichens auf Remote-Rechner
+# Hinzufügen eines Lesezeichens
 /path/to/cloudybm -B "keywort1,keywort2,etc." "Hier steht die Beschreibung" "https://example.com"
 # oder (ohne Schlüsselwörter und Beschreibung):
 /path/to/cloudybm -B "" "" "https://example.com"
+# Durchsucht bookmarks.txt nach SUCHWORT und startet danach eine Abfrage, welche Zeilen gelöscht werden sollen.
+/path/to/cloudybm -s SUCHWORT -d ?
+# Löscht mehrere Zeilen in einem Rutsch.
+/path/to/cloudybm -d NUM -d NUM -d NUM
 
 ```
 **Exitcodes**
@@ -84,7 +88,9 @@ Weitere Terminal-Beispiele:
 1 - Variable remotepath ist leer. Die Datei bookmarks.txt konnte nicht eindeutig ermittelt werden.  
 2 - URI ist bereits in bookmarks.txt vorhanden. Es wird kein neues Lesezeichen eingetragen.  
 3 - Keine gültige URI. Es werden nur Einträge aufgenommen, die die Zeichen `://` enthalten.  
-4 - Kein Lesezeichen gefunden.
+4 - Kein Lesezeichen gefunden.  
+5 - Fehlerhafte Einleitung des Löschvorgangs (Keine aktive Terminalsitzung für Abfrage).  
+6 - Fehler beim Löschvorgang.
 
 **Lizenzhinweise**
 

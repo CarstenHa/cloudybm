@@ -13,11 +13,19 @@ fi
 usage() {
 cat <<EOU
 
-Skript zum Hinzufügen von Lesezeichen.
+Skript zum Auflisten, Hinzufügen und Löschen von Lesezeichen.
 
 $0 [-h]
 $0 [-B] [KEYWORDS[,...]] [DESC] URI
+$0 [-d] NUM
 $0 [-s] SUCHWORT
+
+Weitere Beispiele:
+Beispiel 1: Durchsucht bookmarks.txt nach SUCHWORT und startet danach eine Abfrage, 
+            welche Zeilen gelöscht werden sollen.
+            $0 -s SUCHWORT -d ?
+Beispiel 2: Löscht mehrere Zeilen in einem Rutsch.
+            $0 -d NUM -d NUM -d NUM
 
 Optionen:
 
@@ -28,6 +36,13 @@ Optionen:
 	Beispiele:
 	$0 -B "Wort1,Wort2,etc." "Hier steht die Beschreibung" "https://example.com"
 	$0 -B "" "" "https://example.com"
+
+   -d NUM
+
+	Löscht die angegebene Zeile aus bookmarks.txt.
+	Als NUM muss die DB-POS angegeben werden (siehe Ausgabe der Option -s).
+	Diese Option kann auch mehrmals angegeben werden, um mehrere Zeilen in einem Rutsch
+	zu löschen (siehe Beispiel 2 oben).
 
    -h
 
@@ -51,94 +66,95 @@ Exitcodes:
 3 - Keine gültige URI.
     Es werden nur Einträge aufgenommen, die die Zeichen :// enthalten.
 4 - Kein Lesezeichen gefunden.
+5 - Fehlerhafte Einleitung des Löschvorgangs (Keine aktive Terminalsitzung für Abfrage).
+6 - Fehler beim Löschvorgang (Fehleranalyse siehe journalctl).
+
 
 EOU
 }
 
 impbmfile() {
+ echo "Sicherung wird erstellt ..."
+ cp -vf "${remotepath}/bookmarks.txt" "${remotepath}/bookmarks.bak"
+ #Noch auf .html/.htm-Suffix prüfen?
+ while [ ! -e "$bmfile" ]; do
+  read -p "Bitte eine Boookmark-HTML-Seite angeben: " bmfile
+ done
+ bmlist="$(sed -n 's/^.*\(<A.*<\/A>\).*$/\1/p' "$bmfile")"
 
-     echo "Sicherung wird erstellt ..."
-     cp -vf "${remotepath}/bookmarks.txt" "${remotepath}/bookmarks.bak"
-     #Noch auf .html/.htm-Suffix prüfen?
-     while [ ! -e "$bmfile" ]; do
-      read -p "Bitte eine Boookmark-HTML-Seite angeben: " bmfile
-     done
-     bmlist="$(sed -n 's/^.*\(<A.*<\/A>\).*$/\1/p' "$bmfile")"
+ # Ist notwendig, wenn z.B. ven -B mit newbookmark von remote ausgerufen wird.
+ ttycheck="$(tty -s; echo $?)"
+ # Notwendig, weil Abfrage in Schleife stattfindet und aus here-String gelesen wird.
+ term=$(tty)
+ while read -r singlebm; do
 
+  bmlink="$(echo "$singlebm" | grep -o 'HREF="[^"]*"' | sed 's/^HREF="\(.*\)"/\1/')"
+  # Wichtig für korrekte Suche das $ im grep-Befehl (auch bei Variable bmlinenr).
+  oldbmlink="$(cat "${remotepath}/bookmarks.txt" 2>/dev/null | grep "${bmlink}$")"
+  bmtags="$(echo "$singlebm" | grep -o 'TAGS="[^"]*"' | sed 's/^TAGS="\(.*\)"/\1/')"
+  bmdesc="$(echo "$singlebm" | sed 's/.*>\(.*\)<\/A>/\1/')"
+
+  if [ -n "$oldbmlink" ]; then
+   bmlinenr="$(cat "${remotepath}/bookmarks.txt" 2>/dev/null | grep -n "${bmlink}$" | grep -o '^[0-9]*')"
+   echo "Identische Verlinkung in bookmarks.txt gefunden (Zeile: ${bmlinenr})."
+   currentline="$(sed -n ''$bmlinenr'p' "${remotepath}/bookmarks.txt")"
+   oldbmtags="$(echo "$currentline" | cut -f1)"
+   oldbmdesc="$(echo "$currentline" | cut -f2)"
+   if [ "$bmtags" == "$oldbmtags" -a "$bmdesc" == "$oldbmdesc" ]; then
+    echo "Inhalte sind identisch."
+   else
+    echo "[B] ${currentline}"
+    echo "[N] ${bmtags}	${bmdesc}	${bmlink}"
+    while true; do
      # Ist notwendig, wenn z.B. ven -B mit newbookmark von remote ausgerufen wird.
-     ttycheck="$(tty -s; echo $?)"
-     # Notwendig, weil Abfrage in Schleife stattfindet und aus here-String gelesen wird.
-     term=$(tty)
-     while read -r singlebm; do
-
-      bmlink="$(echo "$singlebm" | grep -o 'HREF="[^"]*"' | sed 's/^HREF="\(.*\)"/\1/')"
-      # Wichtig für korrekte Suche das $ im grep-Befehl (auch bei Variable bmlinenr).
-      oldbmlink="$(cat "${remotepath}/bookmarks.txt" 2>/dev/null | grep "${bmlink}$")"
-      bmtags="$(echo "$singlebm" | grep -o 'TAGS="[^"]*"' | sed 's/^TAGS="\(.*\)"/\1/')"
-      bmdesc="$(echo "$singlebm" | sed 's/.*>\(.*\)<\/A>/\1/')"
-
-      if [ -n "$oldbmlink" ]; then
-       bmlinenr="$(cat "${remotepath}/bookmarks.txt" 2>/dev/null | grep -n "${bmlink}$" | grep -o '^[0-9]*')"
-       echo "Identische Verlinkung in bookmarks.txt gefunden (Zeile: ${bmlinenr})."
-       currentline="$(sed -n ''$bmlinenr'p' "${remotepath}/bookmarks.txt")"
-       oldbmtags="$(echo "$currentline" | cut -f1)"
-       oldbmdesc="$(echo "$currentline" | cut -f2)"
-       if [ "$bmtags" == "$oldbmtags" -a "$bmdesc" == "$oldbmdesc" ]; then
-        echo "Inhalte sind identisch."
-       else
-        echo "[B] ${currentline}"
-        echo "[N] ${bmtags}	${bmdesc}	${bmlink}"
-        while true; do
-         # Ist notwendig, wenn z.B. ven -B mit newbookmark von remote ausgerufen wird.
-         if [ "$ttycheck" -gt 0 ]; then
-          logger -s --id=$$ "Lesezeichen mit der URI ${bmlink##*/} ist bereits in Zeile ${bmlinenr} vorhanden."
-          venexit=2
+     if [ "$ttycheck" -gt 0 ]; then
+      logger -s --id=$$ "Lesezeichen mit der URI ${bmlink##*/} ist bereits in Zeile ${bmlinenr} vorhanden."
+      venexit=2
+      break
+     else
+      read -p "[B]estehende Zeile belassen oder [N]eue aufnehmen? " bmanswer <"$term"
+     fi
+     case "$bmanswer" in
+       B|b) echo "Bestehender Eintrag in bookmarks.txt bleibt erhalten."
           break
-         else
-          read -p "[B]estehende Zeile belassen oder [N]eue aufnehmen? " bmanswer <"$term"
-         fi
-         case "$bmanswer" in
-           B|b) echo "Bestehender Eintrag in bookmarks.txt bleibt erhalten."
-              break
-              ;;
-           n|N) echo "Alte Zeile ${bmlinenr} wird gelöscht und neuer Inhalt aufgenommen."
-                sed -i ''"${bmlinenr}"'d' "${remotepath}/bookmarks.txt" && \
-                echo "${bmtags}	${bmdesc}	${bmlink}" >>"${remotepath}/bookmarks.txt"
-              break
-              ;;
-             *) echo "Fehlerhafte Eingabe!"
-              ;;
-         esac
-        done
-       fi
-      else
-       echo "${bmtags}	${bmdesc}	${bmlink}" >>"${remotepath}/bookmarks.txt"
-       venexit=0
-      fi
+          ;;
+       n|N) echo "Alte Zeile ${bmlinenr} wird gelöscht und neuer Inhalt aufgenommen."
+            sed -i ''"${bmlinenr}"'d' "${remotepath}/bookmarks.txt" && \
+            echo "${bmtags}	${bmdesc}	${bmlink}" >>"${remotepath}/bookmarks.txt"
+          break
+          ;;
+         *) echo "Fehlerhafte Eingabe!"
+          ;;
+     esac
+    done
+   fi
+  else
+   echo "${bmtags}	${bmdesc}	${bmlink}" >>"${remotepath}/bookmarks.txt"
+   venexit=0
+  fi
 
-     done <<<"$bmlist"
-     # Leerzeilen werden entfernt.
-     sed -i '/^$/d' "${remotepath}/bookmarks.txt"
-
+ done <<<"$bmlist"
+ # Leerzeilen werden entfernt.
+ sed -i '/^$/d' "${remotepath}/bookmarks.txt"
 }
 pprintbm() {
-if [ -n "$blist" ]; then
- bmcounter=0
- while IFS= read -r sbm; do
-  let bmcounter++
-  printf "\e[1mBookmark %.5d  :\e[0m DB-POS %d\n" "$bmcounter" "$(echo "$sbm" | cut -f1 | grep -o '^[0-9]*')"
-  printf 'Schlüsselwörter : %s\n' "$(echo "$sbm" | cut -f1 | sed 's/^[0-9]*://')"
-  printf 'Beschreibung    : %s\n' "$(echo "$sbm" | cut -f2)"
-  printf 'URI             : %s\n' "$(echo "$sbm" | cut -f3)"
-  printf %"$(tput cols)"s | tr " " "-"
- done <<<"$blist"
-else
- echo "Kein Lesezeichen gefunden."
- venexit=4
-fi
+ if [ -n "$blist" ]; then
+  bmcounter=0
+  while IFS= read -r sbm; do
+   let bmcounter++
+   printf "\e[1mBookmark %.5d  :\e[0m DB-POS %d\n" "$bmcounter" "$(echo "$sbm" | cut -f1 | grep -o '^[0-9]*')"
+   printf 'Schlüsselwörter : %s\n' "$(echo "$sbm" | cut -f1 | sed 's/^[0-9]*://')"
+   printf 'Beschreibung    : %s\n' "$(echo "$sbm" | cut -f2)"
+   printf 'URI             : %s\n' "$(echo "$sbm" | cut -f3)"
+   printf %"$(tput cols)"s | tr " " "-"
+  done <<<"$blist"
+ else
+  echo "Kein Lesezeichen gefunden."
+  venexit=4
+ fi
 }
 
-while getopts Bhs: opt; do
+while getopts Bd:hs: opt; do
  case $opt in
    B) # Neues Lesezeichen hinzufügen
       shift $(("$OPTIND"-1))
@@ -149,6 +165,14 @@ while getopts Bhs: opt; do
       impbmfile
       rm -f "$tfile"
       break
+   ;;
+   d) # Lesezeichen löschen
+      deletebm="yes"
+      if [ "$OPTARG" == "?" ]; then
+       asknr="yes"
+      else
+       delbm+=("$OPTARG")
+      fi
    ;;
    h) usage
       exit
@@ -174,6 +198,41 @@ while getopts Bhs: opt; do
    ;;
  esac
 done
+
+if [ "$deletebm" == "yes" ]; then
+
+ if [ "$asknr" == "yes" -a "$(tty -s; echo $?)" == 0 ]; then
+  echo "Angabe der Zeilennummer(n), die in der bookmarks.txt gelöscht werden soll(en) (Mehrfachangaben durch Leerzeichen getrennt sind möglich)."
+  read -p "Bitte eingeben: " delline
+  delbm=($delline)
+ elif [ "$asknr" == "yes" -a ! "$(tty -s; echo $?)" == 0 ]; then
+  logger -s --id=$$ "Keine aktive Terminalsitzung."
+  exit 5
+ fi
+
+ if [ -n "$delbm" ]; then
+
+  # Sicherung wird erstellt.
+  cp -vf "${remotepath}/bookmarks.txt" "${remotepath}/bookmarks.bak"
+  # Array wird ggf. sortiert, damit Zeilennummern richtig erhalten bleiben und vom Ende beginnend gelöscht wird.
+  [ ${#delbm[@]} -gt 1 ] && delbm=($(printf '%s\n' "${delbm[@]}" | sort -nr | tr '\n' ' '))
+  for delitem in "${delbm[@]}"; do
+   if [[ "$delitem" =~ ^[0-9]*$ ]]; then
+    if [ -n "$(sed -n ''"$delitem"'p' "${remotepath}/bookmarks.txt")" ]; then
+     sed -i ''"$delitem"'d' "${remotepath}/bookmarks.txt" && echo "Zeile ${delitem} gelöscht."
+    else
+     logger -s --id=$$ "Zeile ${delitem} zum Löschen nicht gefunden."
+     venexit=6
+    fi
+   else
+    logger -s --id=$$ "Ungültige Angabe (${delitem})."
+    venexit=6
+   fi
+  done
+
+ fi
+
+fi
 
 [ -z "$venexit" ] && venexit=0
 exit "$venexit"
