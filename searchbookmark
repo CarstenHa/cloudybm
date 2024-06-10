@@ -36,19 +36,28 @@ if [ "$serverreturn" == 0 ]; then
  serveronline="yes"
  serverdir="${serverdir%/}"
  [ -z "$(ssh-add -l | grep "$(ssh-keygen -lf "$serverkey" | cut -f2 -d' ')")" -a -n "$serverkey" ] && ssh-add "$serverkey"
- # Schreibrechte werden erteilt.
- [ ! -w "${clientdir}/bookmarks.txt" -a -e "${clientdir}/bookmarks.txt" ] && chmod -v +w "${clientdir}/bookmarks.txt"
- scp -pP "$serverport" "${serveruser}@${servername}":"\"${serverdir}\"/bookmarks.txt" "${clientdir}/"
- scpexitb=$?
- if [ ! "$scpexitb" == 0 ]; then
-  logger -s --id=$$ "bookmarks.txt konnte nicht runtergeladen werden."
-  notify-send -i "$closepng" Fehler "bookmarks.txt konnte nicht runtergeladen werden."
- else
-  echo "${0}: bookmarks.txt runtergeladen." | tee >(logger --id=$$)
-  notify-send -i "$applypng" Hinweis "bookmarks.txt runtergeladen."
- fi
- # Schreibrechte werden wieder entzogen.
- [ -w "${clientdir}/bookmarks.txt" -a -e "${clientdir}/bookmarks.txt" ] && chmod -v -w "${clientdir}/bookmarks.txt"
+
+ checkdl() {
+  if [ "$(ssh -p "$serverport" "${serveruser}@${servername}" 'sha1sum "'"$serverdir"'/bookmarks.txt" | cut -f1 -d" "')" != "$(sha1sum "${clientdir}/bookmarks.txt" | cut -f1 -d" ")" ]; then
+
+   # Schreibrechte werden erteilt.
+   [ ! -w "${clientdir}/bookmarks.txt" -a -e "${clientdir}/bookmarks.txt" ] && chmod -v +w "${clientdir}/bookmarks.txt"
+   scp -pP "$serverport" "${serveruser}@${servername}":"\"${serverdir}\"/bookmarks.txt" "${clientdir}/"
+   scpexitb=$?
+   if [ ! "$scpexitb" == 0 ]; then
+    logger -s --id=$$ "bookmarks.txt konnte nicht runtergeladen werden."
+    notify-send -i "$closepng" Fehler "bookmarks.txt konnte nicht runtergeladen werden."
+   else
+    echo "${0}: bookmarks.txt runtergeladen." | tee >(logger --id=$$)
+    notify-send -i "$applypng" Hinweis "bookmarks.txt runtergeladen."
+   fi
+   # Schreibrechte werden wieder entzogen.
+   [ -w "${clientdir}/bookmarks.txt" -a -e "${clientdir}/bookmarks.txt" ] && chmod -v -w "${clientdir}/bookmarks.txt"
+
+  fi
+ }
+
+ checkdl &
 
 else
 
@@ -151,7 +160,9 @@ if [ -n "$pisuche" ]; then
 
    # Neue Datei wird vom Server heruntergeladen.
    case $delbmexit in
-    0) # Schreibrechte werden erteilt.
+    0) # Wartet ggf. auf HG-Prozess (siehe checkdl &)
+       wait
+       # Schreibrechte werden erteilt.
        [ ! -w "${clientdir}/bookmarks.txt" ] && chmod -v +w "${clientdir}/bookmarks.txt"
        scp -pP "$serverport" "${serveruser}@${servername}":"\"${serverdir}\"/bookmarks.txt" "${clientdir}/"
        scpexit=$?
