@@ -52,7 +52,17 @@ newbm="$(zenity --forms \
 
 bmkeywords="$(echo "$newbm" | cut -f1 -d'|')"
 bmdesc="$(echo "$newbm" | cut -f2 -d'|')"
-bmuri="$(echo "$newbm" | cut -f3 -d'|')"
+# URL-Encoding ist wichtig, damit pisuche in searchbookmark richtig ausgewertet.
+bmuri="$(echo "$newbm" | cut -f3 -d'|' | sed '
+                                              s/"/%22/g
+                                              s/&/%26/g
+                                              s/'\''/%27/g
+                                              s/(/%28/g
+                                              s/)/%29/g
+                                              s/;/%3B/g
+                                              s/</%3C/g
+                                              s/>/%3E/g
+                                             ')"
 
 # Variable remotepath wird von Skript cloudybm auf Server benötigt.
 newbmexit="$(ssh -p "$serverport" "${serveruser}@${servername}" "export remotepath=\"${serverdir}\"

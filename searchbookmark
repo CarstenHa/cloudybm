@@ -80,9 +80,9 @@ if [ "$serveronline" == "yes" ]; then
  [ $? == 1 ] && exit 1 
 
  if [ "$eing" == '*' ]; then
-  pisuche="$(ssh -p "$serverport" "${serveruser}@${servername}" '/usr/bin/cat '\"$serverdir\"'/bookmarks.txt' | sed 's/^\(.*\)[\t]\(.*\)[\t]\(.*\)/"\1"\t"\2"\t\3/' | sed 's/""/-/g;s/\(^\|\t\)"/\1/g;s/"\(\t\)/\1/g' | tr '\n' '\t')"
+  pisuche="$(ssh -p "$serverport" "${serveruser}@${servername}" '/usr/bin/cat '\"$serverdir\"'/bookmarks.txt')"
  else
-  pisuche="$(ssh -p "$serverport" "${serveruser}@${servername}" '/usr/bin/grep -i '\"$eing\"' '\"$serverdir\"'/bookmarks.txt' | sed 's/^\(.*\)[\t]\(.*\)[\t]\(.*\)/"\1"\t"\2"\t\3/' | sed 's/""/-/g;s/\(^\|\t\)"/\1/g;s/"\(\t\)/\1/g' | tr '\n' '\t')"
+  pisuche="$(ssh -p "$serverport" "${serveruser}@${servername}" '/usr/bin/grep -i '\"$eing\"' '\"$serverdir\"'/bookmarks.txt')"
  fi
 
 else
@@ -96,14 +96,26 @@ else
  [ $? == 1 ] && exit 1 
 
  if [ "$eing" == '*' ]; then
-  pisuche="$(cat "${clientdir}/bookmarks.txt" | sed 's/^\(.*\)[\t]\(.*\)[\t]\(.*\)/"\1"\t"\2"\t\3/' | sed 's/""/-/g;s/\(^\|\t\)"/\1/g;s/"\(\t\)/\1/g' | tr '\n' '\t')"
+  pisuche="$(cat "${clientdir}/bookmarks.txt")"
  else
-  pisuche="$(grep -i "$eing" "${clientdir}/bookmarks.txt" | sed 's/^\(.*\)[\t]\(.*\)[\t]\(.*\)/"\1"\t"\2"\t\3/' | sed 's/""/-/g;s/\(^\|\t\)"/\1/g;s/"\(\t\)/\1/g' | tr '\n' '\t')"
+  pisuche="$(grep -i "$eing" "${clientdir}/bookmarks.txt")"
  fi
 
 fi
 
 if [ -n "$pisuche" ]; then
+
+  pisuche="$(echo "$pisuche"  | sed 's/^\(.*\)[\t]\(.*\)[\t]\(.*\)/"\1"\t"\2"\t\3/' | sed '
+                                                                                           s/""/-/g
+                                                                                           s/\(^\|\t\)"/\1/g
+                                                                                           s/"\(\t\)/\1/g
+                                                                                           # Encoding
+                                                                                           s/&/\&amp;/g
+                                                                                           s/"/\&quot;/g
+                                                                                           s/'\''/\&apos;/g
+                                                                                           s/</\&lt;/g
+                                                                                           s/>/\&gt;/g
+                                                                                          ' | tr '\n' '\t')"
 
   # Löschen-Button wird nur angezeigt, wenn Server erreichbar ist.
   if [ "$serveronline" == "yes" ]; then
@@ -154,24 +166,24 @@ if [ -n "$pisuche" ]; then
   # Löschung eines Bookmarks funktioniert nur, wenn Server erreichbar ist.
   elif [ "$bmauswexit" == 2 ]; then
 
-   ausg="$(printf '%s\t%s\t%s' "$bmwoerter" "$bmdesc" "$bmuri")"
+   # Wartet ggf. auf HG-Prozess (siehe checkdl &)
+   wait
+   # Zeile zum Löschen wird auf dem Client ermittelt.
+   delnr="$(grep -n ''"$bmuri"'$' "${clientdir}/bookmarks.txt" | grep -o '^[0-9]*')"
    delbmexit="$(ssh -p "$serverport" "${serveruser}@${servername}" "cp -f \"${serverdir}/bookmarks.txt\" \"${serverdir}/bookmarks.bak\" && \
-                                                                    sed -i '\@'\"$ausg\"'@d' \"${serverdir}/bookmarks.txt\"" &>/dev/null; echo $?)"
-
+                                                                    \"${cloudybmdir%/}\"/cloudybm -d \"$delnr\"" &>/dev/null; echo $?)"
    # Neue Datei wird vom Server heruntergeladen.
    case $delbmexit in
-    0) # Wartet ggf. auf HG-Prozess (siehe checkdl &)
-       wait
-       # Schreibrechte werden erteilt.
+    0) # Schreibrechte werden erteilt.
        [ ! -w "${clientdir}/bookmarks.txt" ] && chmod -v +w "${clientdir}/bookmarks.txt"
        scp -pP "$serverport" "${serveruser}@${servername}":"\"${serverdir}\"/bookmarks.txt" "${clientdir}/"
        scpexit=$?
        if [ "$scpexit" == 0 ]; then
-        echo "${0}: Lesezeichen gelöscht und bookmarks.txt kopiert." | tee >(logger --id=$$)
-        notify-send -i "$applypng" Hinweis "Lesezeichen gelöscht und bookmarks.txt kopiert."
+        echo "${0}: Lesezeichen (Zeile ${delnr}) gelöscht und bookmarks.txt kopiert." | tee >(logger --id=$$)
+        notify-send -i "$applypng" Hinweis "Lesezeichen (Zeile ${delnr}) gelöscht und bookmarks.txt kopiert."
        else
-        logger -s --id=$$ "Lesezeichen gelöscht aber Download hat nicht geklappt."
-        notify-send -i "$closepng" Fehler "Lesezeichen gelöscht aber Download hat nicht geklappt."
+        logger -s --id=$$ "Lesezeichen (Zeile ${delnr}) gelöscht aber Download hat nicht geklappt."
+        notify-send -i "$closepng" Fehler "Lesezeichen (Zeile ${delnr}) gelöscht aber Download hat nicht geklappt."
        fi
        # Schreibrechte werden wieder entzogen.
        [ -w "${clientdir}/bookmarks.txt" ] && chmod -v -w "${clientdir}/bookmarks.txt"
