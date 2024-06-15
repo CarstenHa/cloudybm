@@ -54,6 +54,7 @@ bmkeywords="$(echo "$newbm" | cut -f1 -d'|')"
 bmdesc="$(echo "$newbm" | cut -f2 -d'|')"
 # URL-Encoding ist wichtig, damit pisuche in searchbookmark richtig ausgewertet.
 bmuri="$(echo "$newbm" | cut -f3 -d'|' | sed '
+                                              s/ /%20/g
                                               s/"/%22/g
                                               s/&/%26/g
                                               s/'\''/%27/g

@@ -10,6 +10,11 @@ if [ -z "$remotepath" ]; then
  fi
 fi
 
+makebackup() {
+ echo "Sicherung wird erstellt ..."
+ cp -vf "${remotepath}/bookmarks.txt" "${remotepath}/bookmarks.bak" && posbackup="yes"
+}
+
 usage() {
 cat <<EOU
 
@@ -44,6 +49,14 @@ Optionen:
 	Diese Option kann auch mehrmals angegeben werden, um mehrere Zeilen in einem Rutsch
 	zu löschen (siehe Beispiel 2 oben).
 
+   -e
+
+	wendet die URI-Kodierung auf die URIs in der Datei bookmarks.txt an.
+	Bestimmte Zeichen werden in Prozentkodierung geändert.
+	Diese Option kann angewendet werden, wenn Einträge in bookmarks.txt "von Hand"
+	vorgenommen wurden und es Probleme bei der Auswertung des Inhalts auf dem Client-Rechner
+	gibt.
+
    -h
 
 	ruft diese Hilfe auf.
@@ -74,8 +87,7 @@ EOU
 }
 
 impbmfile() {
- echo "Sicherung wird erstellt ..."
- cp -vf "${remotepath}/bookmarks.txt" "${remotepath}/bookmarks.bak"
+ [ ! "$posbackup" == "yes" ] && makebackup
  #Noch auf .html/.htm-Suffix prüfen?
  while [ ! -e "$bmfile" ]; do
   read -p "Bitte eine Boookmark-HTML-Seite angeben: " bmfile
@@ -154,7 +166,7 @@ pprintbm() {
  fi
 }
 
-while getopts Bd:hs: opt; do
+while getopts Bd:ehs: opt; do
  case $opt in
    B) # Neues Lesezeichen hinzufügen
       shift $(("$OPTIND"-1))
@@ -173,6 +185,29 @@ while getopts Bd:hs: opt; do
       else
        delbm+=("$OPTARG")
       fi
+   ;;
+   e) # Encoding URIs in bookmarks.txt
+      [ ! "$posbackup" == "yes" ] && makebackup
+      sed -i -E '
+                 # Hier wird das & in %26 geändert (nur 3. Spalte).
+                 :a;s#^(([^\t]*\t){2}[^\t]*)&([^\t]*)#\1%26\3#g;ta
+                 # Hier wird das < in %3C geändert (nur 3. Spalte).
+                 :a;s#^(([^\t]*\t){2}[^\t]*)<([^\t]*)#\1%3C\3#g;ta
+                 # Hier wird das > in %3E geändert (nur 3. Spalte).
+                 :a;s#^(([^\t]*\t){2}[^\t]*)>([^\t]*)#\1%3E\3#g;ta
+                 # Hier wird das ( in %28 geändert (nur 3. Spalte).
+                 :a;s#^(([^\t]*\t){2}[^\t]*)\(([^\t]*)#\1%28\3#g;ta
+                 # Hier wird das ) in %29 geändert (nur 3. Spalte).
+                 :a;s#^(([^\t]*\t){2}[^\t]*)\)([^\t]*)#\1%29\3#g;ta
+                 # Hier wird das Leerzeichen in %20 geändert (nur 3. Spalte).
+                 :a;s#^(([^\t]*\t){2}[^\t]*) ([^\t]*)#\1%20\3#g;ta
+                 # Hier wird das " in %22 geändert (nur 3. Spalte).
+                 :a;s#^(([^\t]*\t){2}[^\t]*)"([^\t]*)#\1%22\3#g;ta
+                 # Hier wird das Singlequote in %27 geändert (nur 3. Spalte).
+                 :a;s#^(([^\t]*\t){2}[^\t]*)'\''([^\t]*)#\1%27\3#g;ta
+                 # Hier wird das ; in %3B geändert (nur 3. Spalte).
+                 :a;s#^(([^\t]*\t){2}[^\t]*);([^\t]*)#\1%3B\3#g;ta
+                ' "${remotepath}/bookmarks.txt"
    ;;
    h) usage
       exit
@@ -213,7 +248,7 @@ if [ "$deletebm" == "yes" ]; then
  if [ -n "$delbm" ]; then
 
   # Sicherung wird erstellt.
-  cp -vf "${remotepath}/bookmarks.txt" "${remotepath}/bookmarks.bak"
+  [ ! "$posbackup" == "yes" ] && makebackup
   # Array wird ggf. sortiert, damit Zeilennummern richtig erhalten bleiben und vom Ende beginnend gelöscht wird.
   [ ${#delbm[@]} -gt 1 ] && delbm=($(printf '%s\n' "${delbm[@]}" | sort -nr | tr '\n' ' '))
   for delitem in "${delbm[@]}"; do

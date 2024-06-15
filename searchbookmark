@@ -166,15 +166,20 @@ if [ -n "$pisuche" ]; then
   # Löschung eines Bookmarks funktioniert nur, wenn Server erreichbar ist.
   elif [ "$bmauswexit" == 2 ]; then
 
-   # Wartet ggf. auf HG-Prozess (siehe checkdl &)
-   wait
-   # Zeile zum Löschen wird auf dem Client ermittelt.
-   delnr="$(grep -n ''"$bmuri"'$' "${clientdir}/bookmarks.txt" | grep -o '^[0-9]*')"
-   delbmexit="$(ssh -p "$serverport" "${serveruser}@${servername}" "cp -f \"${serverdir}/bookmarks.txt\" \"${serverdir}/bookmarks.bak\" && \
-                                                                    \"${cloudybmdir%/}\"/cloudybm -d \"$delnr\"" &>/dev/null; echo $?)"
+   serverwork="$(ssh -p "$serverport" "${serveruser}@${servername}" '
+                    delnr="$(grep -nP '\'''"$bmuri"'($|\t)'\'' "'"${serverdir}"'/bookmarks.txt" 2>/dev/null | grep -o '^[0-9]*' 2>/dev/null)"
+                    cp -f "'"${serverdir}"'/bookmarks.txt" "'"${serverdir}"'/bookmarks.bak" 2>/dev/null && \
+                    "'"${cloudybmdir%/}"'"/cloudybm -d "$delnr" &>/dev/null
+                    echo "${?}:${delnr}"
+                                                                    ')"
+   delbmexit="${serverwork%:*}"
+   delnr="${serverwork#*:}"
+
    # Neue Datei wird vom Server heruntergeladen.
    case $delbmexit in
-    0) # Schreibrechte werden erteilt.
+    0) # Wartet ggf. auf HG-Prozess (siehe checkdl &)
+       wait
+       # Schreibrechte werden erteilt.
        [ ! -w "${clientdir}/bookmarks.txt" ] && chmod -v +w "${clientdir}/bookmarks.txt"
        scp -pP "$serverport" "${serveruser}@${servername}":"\"${serverdir}\"/bookmarks.txt" "${clientdir}/"
        scpexit=$?
