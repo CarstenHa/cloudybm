@@ -41,7 +41,7 @@ fi
 newbm="$(zenity --forms \
 				--title="Neues Lesezeichen hinzufügen" \
 				--text="Bitte Informationen eingeben" \
-				--separator="|" \
+				--separator=$'\t' \
 				--add-entry="Schlüsselwörter (bitte mit Komma trennen)" \
 				--add-entry="Beschreibung" \
 				--add-entry="URI"
@@ -50,10 +50,11 @@ newbm="$(zenity --forms \
 # Wenn Zenity-Abbruch durchgeführt wurde
 [ -z "$newbm" ] && exit
 
-bmkeywords="$(echo "$newbm" | cut -f1 -d'|')"
-bmdesc="$(echo "$newbm" | cut -f2 -d'|')"
+bmkeywords="$(echo "$newbm" | cut -f1)"
+bmdesc="$(echo "$newbm" | cut -f2)"
 # URL-Encoding ist wichtig, damit pisuche in searchbookmark richtig ausgewertet.
-bmuri="$(echo "$newbm" | cut -f3 -d'|' | sed '
+# Identisch mit Encoding in cloudybm
+bmuri="$(echo "$newbm" | cut -f3 | sed '
                                               s/ /%20/g
                                               s/"/%22/g
                                               s/&/%26/g
@@ -63,6 +64,7 @@ bmuri="$(echo "$newbm" | cut -f3 -d'|' | sed '
                                               s/;/%3B/g
                                               s/</%3C/g
                                               s/>/%3E/g
+                                              s/\?/%3F/g
                                              ')"
 
 # Variable remotepath wird von Skript cloudybm auf Server benötigt.

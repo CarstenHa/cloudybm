@@ -160,6 +160,11 @@ if [ -n "$pisuche" ]; then
 
   if [ "$bmauswexit" == 0 ]; then
 
+   # Bestimmte Zeichen werden hier für den Browser wieder dekodiert.
+   bmuri="$(echo "$bmuri" | sed '
+                                 s/%26/\&/g
+                                 s/%3F/?/g
+                                ')"
    # Öffnen der Seite in Standardanwendung.
    nohup xdg-open "$bmuri" &
  

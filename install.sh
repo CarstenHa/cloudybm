@@ -2,6 +2,7 @@
 
 progname="cloudybm"
 cd "$(dirname $0)"
+lnopt="-vis"
 
 usage() {
 cat <<EOU
@@ -27,9 +28,11 @@ Optionen:
 EOU
 }
 
-while getopts hu opt
+while getopts fhu opt
 do
    case $opt in
+       f) lnopt="-vs"
+       ;;
        h) usage
           exit
        ;;
@@ -126,8 +129,8 @@ else
 fi
 
 # Symbolische Links der Skripte anlegen.
-ln -vis "${PWD}/searchbookmark" "${installdir}/searchbookmark"
-ln -vis "${PWD}/newbookmark" "${installdir}/newbookmark"
+ln "$lnopt" "${PWD}/searchbookmark" "${installdir}/searchbookmark"
+ln "$lnopt" "${PWD}/newbookmark" "${installdir}/newbookmark"
 
 # Ordner für Icons ggf. anlegen.
 [ ! -d "${HOME}/.local/share/icons/hicolor/16x16/apps" ] && mkdir -pv "${HOME}/.local/share/icons/hicolor/16x16/apps"
@@ -136,11 +139,11 @@ ln -vis "${PWD}/newbookmark" "${installdir}/newbookmark"
 [ ! -d "${HOME}/.local/share/icons/hicolor/256x256/apps" ] && mkdir -pv "${HOME}/.local/share/icons/hicolor/256x256/apps"
 
 # Symbolische Links der Icons anlegen.
-find hicolor/ -type f \( -name mybookmarks.0.svg -or -name bookmark_add.0.svg \) -exec ln -vis "${PWD}/{}" "${HOME}/.local/share/icons/{}" \;
+find hicolor/ -type f \( -name mybookmarks.0.svg -or -name bookmark_add.0.svg \) -exec ln "$lnopt" "${PWD}/{}" "${HOME}/.local/share/icons/{}" \;
 
 # Symbolische Links der Programmstarter anlegen.
-ln -vis "${PWD}/searchbookmark.desktop" "${HOME}/.local/share/applications/searchbookmark.desktop"
-ln -vis "${PWD}/newbookmark.desktop" "${HOME}/.local/share/applications/newbookmark.desktop"
+ln "$lnopt" "${PWD}/searchbookmark.desktop" "${HOME}/.local/share/applications/searchbookmark.desktop"
+ln "$lnopt" "${PWD}/newbookmark.desktop" "${HOME}/.local/share/applications/newbookmark.desktop"
 
 # .desktop Dateien validieren.
 desktop-file-validate "${HOME}/.local/share/applications/searchbookmark.desktop"

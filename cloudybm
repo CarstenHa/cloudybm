@@ -100,9 +100,23 @@ impbmfile() {
  term=$(tty)
  while read -r singlebm; do
 
-  bmlink="$(echo "$singlebm" | grep -o 'HREF="[^"]*"' | sed 's/^HREF="\(.*\)"/\1/')"
+  bmlinkraw="$(echo "$singlebm" | grep -o 'HREF="[^"]*"' | sed 's/^HREF="\(.*\)"/\1/')"
+  # Encoding der URIs
+  # Identisch mit Encoding in newbookmark
+  bmlink="$(echo "$bmlinkraw" | sed '
+                                     s/ /%20/g
+                                     s/"/%22/g
+                                     s/&/%26/g
+                                     s/'\''/%27/g
+                                     s/(/%28/g
+                                     s/)/%29/g
+                                     s/;/%3B/g
+                                     s/</%3C/g
+                                     s/>/%3E/g
+                                     s/\?/%3F/g
+                                    ')"
   # Wichtig für korrekte Suche das $ im grep-Befehl (auch bei Variable bmlinenr).
-  oldbmlink="$(cat "${remotepath}/bookmarks.txt" 2>/dev/null | grep "${bmlink}$")"
+  oldbmlink="$(cat "${remotepath}/bookmarks.txt" 2>/dev/null | grep -P ''"${bmlink}"'($|\t)')"
   bmtags="$(echo "$singlebm" | grep -o 'TAGS="[^"]*"' | sed 's/^TAGS="\(.*\)"/\1/')"
   bmdesc="$(echo "$singlebm" | sed 's/.*>\(.*\)<\/A>/\1/')"
 
@@ -187,6 +201,7 @@ while getopts Bd:ehs: opt; do
       fi
    ;;
    e) # Encoding URIs in bookmarks.txt
+      # &,<,>,(,), ,",',;,?,
       [ ! "$posbackup" == "yes" ] && makebackup
       sed -i -E '
                  # Hier wird das & in %26 geändert (nur 3. Spalte).
@@ -207,6 +222,8 @@ while getopts Bd:ehs: opt; do
                  :a;s#^(([^\t]*\t){2}[^\t]*)'\''([^\t]*)#\1%27\3#g;ta
                  # Hier wird das ; in %3B geändert (nur 3. Spalte).
                  :a;s#^(([^\t]*\t){2}[^\t]*);([^\t]*)#\1%3B\3#g;ta
+                 # Hier wird das ? in %3F geändert (nur 3. Spalte).
+                 :a;s#^(([^\t]*\t){2}[^\t]*)\?([^\t]*)#\1%3F\3#g;ta
                 ' "${remotepath}/bookmarks.txt"
    ;;
    h) usage

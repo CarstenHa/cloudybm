@@ -37,6 +37,7 @@ Bei der Deinstallation werden nur die lokalen Symlinks auf die Repo-Dateien entf
 Das Programm kann einfach mit:  
 ```bash
 cd /path/to/cloudybm && git pull
+./install.sh -f
 ```
 aktualisiert werden.
 
