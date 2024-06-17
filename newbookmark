@@ -64,6 +64,17 @@ bmuri="$(echo "$newbm" | cut -f3 | sed '
                                               s/;/%3B/g
                                               s/</%3C/g
                                               s/>/%3E/g
+                                              s/\[/%5B/g
+                                              s/]/%5D/g
+                                              s/{/%7B/g
+                                              s/}/%7D/g
+                                              # Wenn kein Querystring, dann alles mit %2B kodieren.
+                                              /\?/!s/\+/%2B/g
+                                              # Hier wird das Pluszeichen kodiert. Vor einem Query-String als %2B
+                                              # Als Teil eines Query-Strings als Leerzeichen (%20)
+                                              /\?/{h; s/\?.*//; s/\+/%2B/g; x; s/^[^?]*?//; s/\+/%20/g; H; g; s/\n/?/}
+                                              # Das ? muss als letztes verarbeitet werden, da es oben zur Auswertung
+                                              # genutzt wird.
                                               s/\?/%3F/g
                                              ')"
 
