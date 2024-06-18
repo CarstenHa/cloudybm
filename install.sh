@@ -10,14 +10,23 @@ cat <<EOU
 Installiert/Deinstalliert ${progname} 
 Zielverzeichnis ist ein lokales PATH-Verzeichnis.
 Ohne Angabe einer Option wird $progname installiert.
+Bestehende Symlinks werden dabei nicht überschrieben.
 
-Syntax: $progname [-h] [-u]
+Syntax: $progname [-f] [-h] [-i] [-u]
 
 Optionen:
+
+   -f
+
+	Erstellt neue Symlinks ohne Nachfrage.
 
    -h
 
 	ruft diese Hilfe auf.
+
+   -i
+
+	Fragt vor dem Überschreiben der Symlinks nach.
 
    -u
 
