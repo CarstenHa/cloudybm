@@ -246,6 +246,12 @@ while getopts Bd:ehs: opt; do
                                                                  ')"
        # Datei wird neu erstellt.
        paste -d'\t' <(echo "$firstfilepart") <(echo "$secfilepart") >"${remotepath}/bookmarks.txt"
+       if [ "$(md5sum "${remotepath}/bookmarks.bak" | awk '{print $1}')" == "$(md5sum "${remotepath}/bookmarks.txt" | awk '{print $1}')" ]; then
+        echo "Keine Änderungen an Datei bookmarks.txt vorgenommen."
+       else
+        echo "Änderungen bookmarks.bak < > bookmarks.txt:"
+        diff "${remotepath}/bookmarks.bak" "${remotepath}/bookmarks.txt"
+       fi
    ;;
    h) usage
       exit
