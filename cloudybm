@@ -117,10 +117,11 @@ impbmfile() {
                                      s/]/%5D/g
                                      s/{/%7B/g
                                      s/}/%7D/g
-                                     # Wenn kein Querystring, dann alles mit %2B kodieren.
+                                     s/|/%7C/g
+                                     # Wenn kein Querystring, dann alle Pluszeichen mit %2B kodieren.
                                      /\?/!s/\+/%2B/g
-                                     # Hier wird das Pluszeichen kodiert. Vor einem Query-String als %2B
-                                     # Als Teil eines Query-Strings als Leerzeichen (%20)
+                                     # Hier wird das Pluszeichen kodiert: Vor einem Query-String als %2B
+                                     #                                    Als Teil eines Query-Strings als Leerzeichen (%20)
                                      /\?/{h; s/\?.*//; s/\+/%2B/g; x; s/^[^?]*?//; s/\+/%20/g; H; g; s/\n/?/}
                                      # Das ? muss als letztes verarbeitet werden, da es oben zur Auswertung
                                      # genutzt wird.
@@ -216,63 +217,35 @@ while getopts Bd:ehs: opt; do
       fi
    ;;
    e) # Encoding URIs in bookmarks.txt
-      # &,<,>,(,), ,",',;,[,],{,},|,!,+,?,
       [ ! "$posbackup" == "yes" ] && makebackup
-      sed -i -E '
-                 # Hier wird das & in %26 geändert (nur 3. Spalte).
-                 :a;s#^(([^\t]*\t){2}[^\t]*)&([^\t]*)#\1%26\3#g;ta
-                 # Hier wird das < in %3C geändert (nur 3. Spalte).
-                 :a;s#^(([^\t]*\t){2}[^\t]*)<([^\t]*)#\1%3C\3#g;ta
-                 # Hier wird das > in %3E geändert (nur 3. Spalte).
-                 :a;s#^(([^\t]*\t){2}[^\t]*)>([^\t]*)#\1%3E\3#g;ta
-                 # Hier wird das ( in %28 geändert (nur 3. Spalte).
-                 :a;s#^(([^\t]*\t){2}[^\t]*)\(([^\t]*)#\1%28\3#g;ta
-                 # Hier wird das ) in %29 geändert (nur 3. Spalte).
-                 :a;s#^(([^\t]*\t){2}[^\t]*)\)([^\t]*)#\1%29\3#g;ta
-                 # Hier wird das Leerzeichen in %20 geändert (nur 3. Spalte).
-                 :a;s#^(([^\t]*\t){2}[^\t]*) ([^\t]*)#\1%20\3#g;ta
-                 # Hier wird das " in %22 geändert (nur 3. Spalte).
-                 :a;s#^(([^\t]*\t){2}[^\t]*)"([^\t]*)#\1%22\3#g;ta
-                 # Hier wird das Singlequote in %27 geändert (nur 3. Spalte).
-                 :a;s#^(([^\t]*\t){2}[^\t]*)'\''([^\t]*)#\1%27\3#g;ta
-                 # Hier wird das ; in %3B geändert (nur 3. Spalte).
-                 :a;s#^(([^\t]*\t){2}[^\t]*);([^\t]*)#\1%3B\3#g;ta
-                 # Hier wird das [ in %5B geändert (nur 3. Spalte).
-                 :a;s#^(([^\t]*\t){2}[^\t]*)\[([^\t]*)#\1%5B\3#g;ta
-                 # Hier wird das ] in %5D geändert (nur 3. Spalte).
-                 :a;s#^(([^\t]*\t){2}[^\t]*)]([^\t]*)#\1%5D\3#g;ta
-                 # Hier wird das { in %7B geändert (nur 3. Spalte).
-                 :a;s#^(([^\t]*\t){2}[^\t]*)\{([^\t]*)#\1%7B\3#g;ta
-                 # Hier wird das } in %7D geändert (nur 3. Spalte).
-                 :a;s#^(([^\t]*\t){2}[^\t]*)}([^\t]*)#\1%7D\3#g;ta
-                ' "${remotepath}/bookmarks.txt"
 
-                # '+'-Zeichen wird gecheckt,
-                # als Teil eines Query-Strings als Leerzeichen (%20),
-                # wenn kein Querystring gefunden wird, alles als %2B
-                fcheck=($(cut -f3 "${remotepath}/bookmarks.txt" | grep -n '\+' | grep -o '^[0-9]*' | sort -nr | tr '\n' ' '))
-                if [ -n "$fcheck" ]; then
-                 for line in "${fcheck[@]}"; do
-                  unset chcontent1
-                  unset chcontent2
-                  echo "Zeile $line wird angepasst ..."
-                  chcontent1="$(sed -n ''"$line"'p' "${remotepath}/bookmarks.txt" | cut -f1,2)"
-                  chcontent2="$(sed -n ''"$line"'p' "${remotepath}/bookmarks.txt" | cut -f3 | sed '
-                                                                                                   /\?/!s/\+/%2B/g
-                                                                                                   # Hier wird das Pluszeichen kodiert. Vor einem Query-String als %2B
-                                                                                                   # Als Teil eines Query-Strings als Leerzeichen (%20)
-                                                                                                   /\?/{h; s/\?.*//; s/\+/%2B/g; x; s/^[^?]*?//; s/\+/%20/g; H; g; s/\n/?/}
-                                                                                                  ')"
-                  sed -i ''"$line"'d' "${remotepath}/bookmarks.txt"
-                  sed -i ''"$line"'i'"$chcontent1"'\t'"$chcontent2"'' "${remotepath}/bookmarks.txt"
-                 done
-                fi
-
-                # Als letztes wird das ? geändert, damit obige Arbeitsschritte korrekt funktionieren.
-                sed -i -E '
-                           # Hier wird das ? in %3F geändert (nur 3. Spalte).
-                           :a;s#^(([^\t]*\t){2}[^\t]*)\?([^\t]*)#\1%3F\3#g;ta
-                          ' "${remotepath}/bookmarks.txt"
+      firstfilepart="$(cut -f1,2 "${remotepath}/bookmarks.txt")"
+      secfilepart="$(cut -f3 "${remotepath}/bookmarks.txt" | sed '
+                                     s/ /%20/g
+                                     s/"/%22/g
+                                     s/&/%26/g
+                                     s/'\''/%27/g
+                                     s/(/%28/g
+                                     s/)/%29/g
+                                     s/;/%3B/g
+                                     s/</%3C/g
+                                     s/>/%3E/g
+                                     s/\[/%5B/g
+                                     s/]/%5D/g
+                                     s/{/%7B/g
+                                     s/}/%7D/g
+                                     s/|/%7C/g
+                                     # Wenn kein Querystring, dann alle Pluszeichen mit %2B kodieren.
+                                     /\?/!s/\+/%2B/g
+                                     # Hier wird das Pluszeichen kodiert: Vor einem Query-String als %2B
+                                     #                                    Als Teil eines Query-Strings als Leerzeichen (%20)
+                                     /\?/{h; s/\?.*//; s/\+/%2B/g; x; s/^[^?]*?//; s/\+/%20/g; H; g; s/\n/?/}
+                                     # Das ? muss als letztes verarbeitet werden, da es oben zur Auswertung
+                                     # genutzt wird.
+                                     s/\?/%3F/g
+                                                                 ')"
+       # Datei wird neu erstellt.
+       paste -d'\t' <(echo "$firstfilepart") <(echo "$secfilepart") >"${remotepath}/bookmarks.txt"
    ;;
    h) usage
       exit
