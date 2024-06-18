@@ -2,7 +2,7 @@
 
 progname="cloudybm"
 cd "$(dirname $0)"
-lnopt="-vis"
+lnopt="-vs"
 
 usage() {
 cat <<EOU
@@ -28,13 +28,15 @@ Optionen:
 EOU
 }
 
-while getopts fhu opt
+while getopts fhiu opt
 do
    case $opt in
-       f) lnopt="-vs"
+       f) lnopt="-vfs"
        ;;
        h) usage
           exit
+       ;;
+       i) lnopt="-vis"
        ;;
        u) # uninstall
           find ~/.local/bin ~/bin -type l \( -name "searchbookmark" -o -name "newbookmark" \) -exec rm -vi {} \;
