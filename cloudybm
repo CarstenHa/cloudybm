@@ -14,7 +14,6 @@ makebackup() {
  echo "Sicherung wird erstellt ..."
  cp -vf "${remotepath}/bookmarks.txt" "${remotepath}/bookmarks.bak" && posbackup="yes"
 }
-
 usage() {
 cat <<EOU
 
@@ -22,6 +21,7 @@ Skript zum Auflisten, Hinzufügen und Löschen von Lesezeichen.
 
 $0 [-h]
 $0 [-B] [KEYWORDS[,...]] [DESC] URI
+$0 [-c] NUM|NUM:NUM|:NUM|NUM:|all
 $0 [-d] NUM
 $0 [-s] SUCHWORT
 
@@ -41,6 +41,25 @@ Optionen:
 	Beispiele:
 	$0 -B "Wort1,Wort2,etc." "Hier steht die Beschreibung" "https://example.com"
 	$0 -B "" "" "https://example.com"
+
+   -c NUM|NUM:NUM|:NUM|NUM:|all
+
+	gibt den HTTP-Statuscode von URI(s) aus.
+	Benötigt ein weiteres Argument, welche Zeilen geprüft werden sollen. Folgende Angaben
+	sind möglich:
+	all     : Überprüft alle in der Datei bookmarks.txt vorhandenen URI(s).
+	NUM     : Überprüft die angegebene Zeile.
+	NUM:NUM : Überprüft einen bestimmten Bereich aus der bookmarks.txt.
+	          Folgendes Beispiel überprüft die Zeilen 12 bis 24: $0 -c 12:24
+	:NUM    : Überprüft den Bereich von Zeile 1 bis zur angegebenen Zeile.
+	NUM:    : Überprüft den Bereich von der angegebenen Zeile bis zur letzten Zeile.
+	Die Ausgabe setzt sich wie folgt zusammen:
+	Spalte 1: Zeilennummer in bookmarks.txt
+	Spalte 2: HTTP-Statuscode (weitere Infos siehe: https://de.wikipedia.org/wiki/HTTP-Statuscode)
+	Spalte 3: HTTPS-Check
+	          0 = Schreibweise in bookmarks.txt ist NICHT http://
+	          1 = Schreibweise in bookmarks.txt ist http:// und sollte ggf. überprüft werden.
+	Spalte 4: Überprüfte URI
 
    -d NUM
 
@@ -81,11 +100,44 @@ Exitcodes:
 4 - Kein Lesezeichen gefunden.
 5 - Fehlerhafte Einleitung des Löschvorgangs (Keine aktive Terminalsitzung für Abfrage).
 6 - Fehler beim Löschvorgang (Fehleranalyse siehe journalctl).
-
+7 - Doppelte URIs in bookmarks.txt gefunden.
 
 EOU
 }
-
+# sed-Befehle für URI-Encoding
+urienc() {
+cat <<EOE
+s/ /%20/g
+s/"/%22/g
+s/&/%26/g
+s/'\''/%27/g
+s/(/%28/g
+s/)/%29/g
+s/;/%3B/g
+s/</%3C/g
+s/>/%3E/g
+s/\[/%5B/g
+s/]/%5D/g
+s/{/%7B/g
+s/}/%7D/g
+s/|/%7C/g
+# Wenn kein Querystring, dann alle Pluszeichen mit %2B kodieren.
+/\?/!s/\+/%2B/g
+# Hier wird das Pluszeichen kodiert: Vor einem Query-String als %2B
+#                                    Als Teil eines Query-Strings als Leerzeichen (%20)
+/\?/{h; s/\?.*//; s/\+/%2B/g; x; s/^[^?]*?//; s/\+/%20/g; H; g; s/\n/?/}
+# Das ? muss als letztes verarbeitet werden, da es oben zur Auswertung
+# genutzt wird.
+s/\?/%3F/g
+EOE
+}
+# sed-Befehle für URI-Decoding
+uridec() {
+cat <<EOD
+s/%26/\&/g
+s/%3F/?/g
+EOD
+}
 impbmfile() {
  [ ! "$posbackup" == "yes" ] && makebackup
  #Noch auf .html/.htm-Suffix prüfen?
@@ -103,30 +155,7 @@ impbmfile() {
   bmlinkraw="$(echo "$singlebm" | grep -o 'HREF="[^"]*"' | sed 's/^HREF="\(.*\)"/\1/')"
   # Encoding der URIs
   # Identisch mit Encoding in newbookmark
-  bmlink="$(echo "$bmlinkraw" | sed '
-                                     s/ /%20/g
-                                     s/"/%22/g
-                                     s/&/%26/g
-                                     s/'\''/%27/g
-                                     s/(/%28/g
-                                     s/)/%29/g
-                                     s/;/%3B/g
-                                     s/</%3C/g
-                                     s/>/%3E/g
-                                     s/\[/%5B/g
-                                     s/]/%5D/g
-                                     s/{/%7B/g
-                                     s/}/%7D/g
-                                     s/|/%7C/g
-                                     # Wenn kein Querystring, dann alle Pluszeichen mit %2B kodieren.
-                                     /\?/!s/\+/%2B/g
-                                     # Hier wird das Pluszeichen kodiert: Vor einem Query-String als %2B
-                                     #                                    Als Teil eines Query-Strings als Leerzeichen (%20)
-                                     /\?/{h; s/\?.*//; s/\+/%2B/g; x; s/^[^?]*?//; s/\+/%20/g; H; g; s/\n/?/}
-                                     # Das ? muss als letztes verarbeitet werden, da es oben zur Auswertung
-                                     # genutzt wird.
-                                     s/\?/%3F/g
-                                    ')"
+  bmlink="$(echo "$bmlinkraw" | sed -f <(urienc))"
   # Wichtig für korrekte Suche das $ im grep-Befehl (auch bei Variable bmlinenr).
   oldbmlink="$(cat "${remotepath}/bookmarks.txt" 2>/dev/null | grep -P ''"${bmlink}"'($|\t)')"
   bmtags="$(echo "$singlebm" | grep -o 'TAGS="[^"]*"' | sed 's/^TAGS="\(.*\)"/\1/')"
@@ -184,10 +213,7 @@ pprintbm() {
    printf 'Schlüsselwörter : %s\n' "$(echo "$sbm" | cut -f1 | sed 's/^[0-9]*://')"
    printf 'Beschreibung    : %s\n' "$(echo "$sbm" | cut -f2)"
    # Bestimmte Zeichen werden hier wieder dekodiert.
-   printf 'URI             : %s\n' "$(echo "$sbm" | cut -f3 | sed '
-                                                                   s/%26/\&/g
-                                                                   s/%3F/?/g
-                                                                  ')"
+   printf 'URI             : %s\n' "$(echo "$sbm" | cut -f3 | sed -f <(uridec))"
    printf %"$(tput cols)"s | tr " " "-"
   done <<<"$blist"
  else
@@ -195,8 +221,16 @@ pprintbm() {
   venexit=4
  fi
 }
+checkbmfile() {
+ chkbm="$(cut -f3 "${remotepath}/bookmarks.txt" | sort | uniq -d)"
+ if [ -n "$chkbm" ]; then
+  echo "Doppelte URI-Einträge in bookmarks.txt gefunden. Bitte erst bereinigen."
+  echo "$chkbm"
+  exit 7
+ fi
+}
 
-while getopts Bd:ehs: opt; do
+while getopts Bc:d:ehs: opt; do
  case $opt in
    B) # Neues Lesezeichen hinzufügen
       shift $(("$OPTIND"-1))
@@ -207,6 +241,28 @@ while getopts Bd:ehs: opt; do
       impbmfile
       rm -f "$tfile"
       break
+   ;;
+   c) statuscheck="yes"
+      checkbmfile
+      finishline="$(cat "${remotepath}/bookmarks.txt" | wc -l)"
+      while [[ ! "$OPTARG" =~ ^[0-9]*:{0,1}[0-9]*$ ]] && [ ! "$OPTARG" == "all" ]; do
+       read -p "Bitte ein gültiges Format angeben (NUM:NUM oder all): " OPTARG
+      done
+      if [ "$OPTARG" == "all" ]; then
+       beginline="1"
+       endline="$finishline"
+      else
+       beginline="${OPTARG%:*}"
+       endline="${OPTARG#*:}"
+       [ -z "$beginline" ] && beginline="1"
+       [ -z "$endline" ] && endline="$finishline"
+      fi
+      while [ "$endline" -gt "$finishline" ]; do
+       read -p "Bitte eine gültige Zahl für das Ende des Zeilenbereiches eingeben (=< ${finishline}): " endline
+      done
+      while [ "$beginline" -gt "$endline" ]; do
+       read -p "Bitte eine gültige Zahl für den Anfang des Zeilenbereiches eingeben (=< ${endline}): " beginline
+      done
    ;;
    d) # Lesezeichen löschen
       deletebm="yes"
@@ -220,38 +276,15 @@ while getopts Bd:ehs: opt; do
       [ ! "$posbackup" == "yes" ] && makebackup
 
       firstfilepart="$(cut -f1,2 "${remotepath}/bookmarks.txt")"
-      secfilepart="$(cut -f3 "${remotepath}/bookmarks.txt" | sed '
-                                     s/ /%20/g
-                                     s/"/%22/g
-                                     s/&/%26/g
-                                     s/'\''/%27/g
-                                     s/(/%28/g
-                                     s/)/%29/g
-                                     s/;/%3B/g
-                                     s/</%3C/g
-                                     s/>/%3E/g
-                                     s/\[/%5B/g
-                                     s/]/%5D/g
-                                     s/{/%7B/g
-                                     s/}/%7D/g
-                                     s/|/%7C/g
-                                     # Wenn kein Querystring, dann alle Pluszeichen mit %2B kodieren.
-                                     /\?/!s/\+/%2B/g
-                                     # Hier wird das Pluszeichen kodiert: Vor einem Query-String als %2B
-                                     #                                    Als Teil eines Query-Strings als Leerzeichen (%20)
-                                     /\?/{h; s/\?.*//; s/\+/%2B/g; x; s/^[^?]*?//; s/\+/%20/g; H; g; s/\n/?/}
-                                     # Das ? muss als letztes verarbeitet werden, da es oben zur Auswertung
-                                     # genutzt wird.
-                                     s/\?/%3F/g
-                                                                 ')"
-       # Datei wird neu erstellt.
-       paste -d'\t' <(echo "$firstfilepart") <(echo "$secfilepart") >"${remotepath}/bookmarks.txt"
-       if [ "$(md5sum "${remotepath}/bookmarks.bak" | awk '{print $1}')" == "$(md5sum "${remotepath}/bookmarks.txt" | awk '{print $1}')" ]; then
-        echo "Keine Änderungen an Datei bookmarks.txt vorgenommen."
-       else
-        echo "Änderungen bookmarks.bak < > bookmarks.txt:"
-        diff "${remotepath}/bookmarks.bak" "${remotepath}/bookmarks.txt"
-       fi
+      secfilepart="$(cut -f3 "${remotepath}/bookmarks.txt" | sed <(urienc))"
+      # Datei wird neu erstellt.
+      paste -d'\t' <(echo "$firstfilepart") <(echo "$secfilepart") >"${remotepath}/bookmarks.txt"
+      if [ "$(md5sum "${remotepath}/bookmarks.bak" | awk '{print $1}')" == "$(md5sum "${remotepath}/bookmarks.txt" | awk '{print $1}')" ]; then
+       echo "Keine Änderungen an Datei bookmarks.txt vorgenommen."
+      else
+       echo "Änderungen bookmarks.bak < > bookmarks.txt:"
+       diff "${remotepath}/bookmarks.bak" "${remotepath}/bookmarks.txt"
+      fi
    ;;
    h) usage
       exit
@@ -277,6 +310,30 @@ while getopts Bd:ehs: opt; do
    ;;
  esac
 done
+
+if [ "$statuscheck" == "yes" ]; then
+ tfile_s=$(mktemp)
+ urllist="$(cat "${remotepath}/bookmarks.txt" | nl -b a -n ln | cut -f1,4 | sed -n ''"$beginline"','"$endline"'p')"
+
+ while read -r line; do
+  zeile="$(echo "$line" | cut -f1 | sed 's/ //g')"
+  url="$(echo "$line" | cut -f2 | sed -f <(uridec))"
+  # Es wird auf veraltete http-Einträge geprüft.
+  echo "$url" | grep '^http://' &>/dev/null && httpcheck="1" || httpcheck="0"
+  # -L : folgt Weiterleitungen
+  status="$(curl -L --head --write-out '%{response_code}\n' --silent --max-time 15 --connect-timeout 0 -X GET "$url" | sed -n '$p')"
+  if [[ "$status" =~ ^2 ]]; then
+   printf '%5d \e[32m%3d\e[0m %1d %s\n' "$zeile" "$status" "$httpcheck" "$url"
+  elif [[ "$status" =~ ^3 ]]; then
+   printf '%5d \e[33m%3d\e[0m %1d %s\n' "$zeile" "$status" "$httpcheck" "$url"
+  else
+   printf '%5d \e[31m%3d\e[0m %1d %s\n' "$zeile" "$status" "$httpcheck" "$url"
+  fi
+  printf '%d\t%d\t%d\t%s\n' "${zeile}" "${status}" "${httpcheck}" "${url}" >>"$tfile_s"
+ done <<<"$urllist"
+
+ echo "Auswertung befindet sich in der Datei ${tfile_s}"
+fi
 
 if [ "$deletebm" == "yes" ]; then
 
