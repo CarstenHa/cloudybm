@@ -81,6 +81,10 @@ Terminal-Beispiele mit cloudybm (wenn man mit SSH auf dem Server ist):
 /path/to/cloudybm -s SUCHWORT -d ?
 # Löscht mehrere Zeilen in einem Rutsch.
 /path/to/cloudybm -d NUM -d NUM -d NUM
+# HTTP-Statuscheck aller Links aus bookmarks.txt
+/path/to/cloudybm -c all
+# HTTP-Statuscheck für einen bestimmten Bereich von Links aus bookmarks.txt (hier Zeile 100 bis 200. Weitere Möglichkeiten siehe /path/to/cloudybm -h)
+/path/to/cloudybm -c 100:200
 
 ```
 **Exitcodes**
@@ -91,7 +95,8 @@ Terminal-Beispiele mit cloudybm (wenn man mit SSH auf dem Server ist):
 3 - Keine gültige URI. Es werden nur Einträge aufgenommen, die die Zeichen `://` enthalten.  
 4 - Kein Lesezeichen gefunden.  
 5 - Fehlerhafte Einleitung des Löschvorgangs (Keine aktive Terminalsitzung für Abfrage).  
-6 - Fehler beim Löschvorgang.
+6 - Fehler beim Löschvorgang.  
+7 - Doppelte URIs in bookmarks.txt gefunden.
 
 **Lizenzhinweise**
 

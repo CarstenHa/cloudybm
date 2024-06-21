@@ -109,7 +109,7 @@ if [ -n "$pisuche" ]; then
                                                                                            s/""/-/g
                                                                                            s/\(^\|\t\)"/\1/g
                                                                                            s/"\(\t\)/\1/g
-                                                                                           # Encoding
+                                                                                           # yad-Encoding
                                                                                            s/&/\&amp;/g
                                                                                            s/"/\&quot;/g
                                                                                            s/'\''/\&apos;/g
