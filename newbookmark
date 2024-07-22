@@ -10,6 +10,11 @@ else
  logger -s --id=$$ "Datei ${pathofsearchbm}/config/cloudybm.cfg existiert nicht. Skript wird abgebrochen"
  exit 1
 fi
+if [ ! -e "${pathofsearchbm}/config/uriencode.cfg" ]; then
+ notify-send Fehler "Datei ${pathofsearchbm}/config/uriencode.cfg existiert nicht.\nSkript wird abgebrochen"
+ logger -s --id=$$ "Datei ${pathofsearchbm}/config/uriencode.cfg existiert nicht. Skript wird abgebrochen"
+ exit 1
+fi
 if [ -z "$(type -p zenity)" ]; then
  notify-send -i "$closepng" Fehler "Zenity wurde nicht gefunden. Bitte erst installieren."
  logger -s --id=$$ "Zenity wurde nicht gefunden. Bitte erst installieren."
@@ -52,32 +57,8 @@ newbm="$(zenity --forms \
 
 bmkeywords="$(echo "$newbm" | cut -f1)"
 bmdesc="$(echo "$newbm" | cut -f2)"
-# URL-Encoding ist wichtig, damit pisuche in searchbookmark richtig ausgewertet.
-# Identisch mit Funktion urienc in cloudybm.
-bmuri="$(echo "$newbm" | cut -f3 | sed '
-                                              s/ /%20/g
-                                              s/"/%22/g
-                                              s/&/%26/g
-                                              s/'\''/%27/g
-                                              s/(/%28/g
-                                              s/)/%29/g
-                                              s/;/%3B/g
-                                              s/</%3C/g
-                                              s/>/%3E/g
-                                              s/\[/%5B/g
-                                              s/]/%5D/g
-                                              s/{/%7B/g
-                                              s/}/%7D/g
-                                              s/|/%7C/g
-                                              # Wenn kein Querystring, dann alle Pluszeichen mit %2B kodieren.
-                                              /\?/!s/\+/%2B/g
-                                              # Hier wird das Pluszeichen kodiert: Vor einem Query-String als %2B
-                                              #                                    Als Teil eines Query-Strings als Leerzeichen (%20)
-                                              /\?/{h; s/\?.*//; s/\+/%2B/g; x; s/^[^?]*?//; s/\+/%20/g; H; g; s/\n/?/}
-                                              # Das ? muss als letztes verarbeitet werden, da es oben zur Auswertung
-                                              # genutzt wird.
-                                              s/\?/%3F/g
-                                             ')"
+# URL-Encoding ist identisch mit Funktion urienc in cloudybm.
+bmuri="$(echo "$newbm" | cut -f3 | sed -f "${pathofsearchbm}/config/uriencode.cfg")"
 
 # Variable remotepath wird von Skript cloudybm auf Server benötigt.
 newbmexit="$(ssh -p "$serverport" "${serveruser}@${servername}" "export remotepath=\"${serverdir}\"
