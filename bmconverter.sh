@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Auf Abhängigkeiten prüfen
+if [ -z "$(type -p jq)" ]; then
+ echo "Das Programm jq ist nicht installiert. Bitte erst installieren."
+ exit 1
+fi
+
 # ** Funktionen **
 sendtoserver() {
 if [ -e "./config/cloudybm.cfg" ]; then
@@ -52,11 +58,15 @@ usage() {
 cat <<EOU
 
 Konvertiert Bookmarks aus einer .json-Datei in das cloudybm-Format.
-bookmarks.txt wird erstellt und kann anschließend auf den Server kopiert
-und im lokalen Bookmark-Ordner abgelegt werden.
 
 Syntax: $0 [-h]
         $0 [-i FILE]
+        $0 -s
+
+Beispiele:
+
+1. Konvertierung und anschließende Synchronisation:
+   $0 -si /path/to/bmfile.json
 
 Optionen:
 
@@ -66,16 +76,26 @@ Optionen:
 
    -i FILE
 
-	Angabe von Pfad und Dateinamen der auszuwertenden .json-Datei.
+	Mit dieser Option wird der Inhalt einer bestehenden .json-Datei konvertiert.
+	Diese Option benötigt zusätzlich die Angabe von Pfad und Dateinamen der auszuwertenden
+	.json-Datei.
 
-Das Exportieren von Bookmarks in eine .json-Datei und das anschließende Konvertieren mit
-bmconverter.sh wurde mit Dateien folgender Browser erfolgreich getestet:
+   -s
+
+	Synchronisiert die Datei ./bookmarks.txt mit Server und lokalem Verzeichnis.
+	Eine eventuell bestehende bookmarks.txt wird dabei ersetzt.
+
+Das Exportieren von Bookmarks in eine .json-Datei (mit dem Browser) und das anschließende Konvertieren
+mit bmconverter.sh wurde mit Dateien folgender Browser erfolgreich getestet:
 Firefox
 
 EOU
 }
 
-while getopts hi: opt; do
+pathtoconv="$(dirname $(readlink -f ${0}))"
+cd "$pathtoconv"
+
+while getopts hi:s opt; do
  case "$opt" in
   h) # Hilfe
      usage
@@ -83,18 +103,16 @@ while getopts hi: opt; do
   ;;
   i) # Inputfile
      inputfile="$OPTARG"
+     while [ "$(jq . "$inputfile" &>/dev/null; echo "$?")" != 0 ]; do
+      read -p "Bitte eine gültige json-Datei mit einen absoluten Pfad oder relativ zu ${pathtoconv} angeben: " inputfile
+     done
+  ;;
+  s) bmsync="yes"
   ;;
  esac
 done
 
-# ** Überprüfungen **
-if [ -z "$(type -p jq)" ]; then
- echo "Das Programm jq ist nicht installiert. Bitte erst installieren."
- exit 1
-fi
-
-pathtoconv="$(dirname $(readlink -f ${0}))"
-cd "$pathtoconv"
+# ** Weitere Überprüfungen **
 
 if [ ! -e "${pathtoconv}/config/uriencode.cfg" ]; then
  notify-send Fehler "Datei ${pathtoconv}/config/uriencode.cfg existiert nicht.\nSkript wird abgebrochen"
@@ -102,54 +120,56 @@ if [ ! -e "${pathtoconv}/config/uriencode.cfg" ]; then
  exit 1
 fi
 
-[ -e ./bookmarks.txt ] && read -p "Es existiert bereits eine Datei bookmarks.txt im Erstellungsordner ${PWD}. Datei wird überschrieben. Weiter mit [ENTER]. Abbruch mit [STRG]+[C]."
+# ** Erstellung der Datei bookmarks.txt (Option -i) **
+if [ -n "$inputfile" ]; then
 
-while [ "$(jq . "$inputfile" &>/dev/null; echo "$?")" != 0 ]; do
- read -p "Bitte eine gültige json-Datei angeben: " inputfile
-done
+ [ -e ./bookmarks.txt ] && read -p "Es existiert bereits eine Datei bookmarks.txt im Erstellungsordner ${PWD}. Datei wird überschrieben. Weiter mit [ENTER]. Abbruch mit [STRG]+[C]."
+ # Erstellung nur bei mindestens einem gefundenen Schlüssel(n) mit der Bezeichnung uri
+ if [ -n "$(jq 'recurse | objects | has("uri")' "$inputfile" | grep true)" ]; then
+  echo "Lesezeichen werden jetzt konvertiert ..."
+  jq -r '.. | objects | select(has("uri") and .uri != null) | "\(.tags // "")\t\(.title // "")\t\(.uri // "")"' "$inputfile" >./bookmarks.txt
+  # URI-Encoding
+  keysanddesc="$(cut -f1,2 ./bookmarks.txt)"
+  bmuri="$(cut -f3 ./bookmarks.txt | sed -f "${pathtoconv}/config/uriencode.cfg")"
+  paste -d'\t' <(echo "$keysanddesc") <(echo "$bmuri") >./bookmarks.txt
+ else
+  echo "Datei ${inputfile} enthält keinen Schlüssel mit der Bezeichnung uri."
+  echo "Datei bookmarks.txt konnte nicht erstellt werden."
+  exit 1
+ fi
 
-# ** Erstellung der Datei bookmarks.txt bei gefundenen Schlüssel(n) mit der Bezeichnung uri **
-if [ -n "$(jq 'recurse | objects | has("uri")' "$inputfile" | grep true)" ]; then
- jq -r '.. | objects | select(has("uri") and .uri != null) | "\(.tags // "")\t\(.title // "")\t\(.uri // "")"' "$inputfile" >./bookmarks.txt
- keysanddesc="$(cut -f1,2 ./bookmarks.txt)"
- bmuri="$(cut -f3 ./bookmarks.txt | sed -f "${pathtoconv}/config/uriencode.cfg")"
- paste -d'\t' <(echo "$keysanddesc") <(echo "$bmuri") >./bookmarks.txt
- asksend="yes"
-else
- echo "Datei ${inputfile} enthält keinen Schlüssel mit der Bezeichnung uri."
- echo "Datei bookmarks.txt konnte nicht erstellt werden."
- exit 1
 fi
 
-# ** Anlegen der Datei bookmarks.txt auf Server und im lokalen Bookmark-Ordner **
-if [ "$asksend" == "yes" ]; then
- while true
-  do
-   echo "Die Datei bookmarks.txt kann jetzt auf den Server und im lokalen Bookmark-Ordner angelegt werden."
-   read -p "Soll die Datei jetzt verteilt werden? (j/n) " gotoserver
-    case "$gotoserver" in
-      j) # ** Server **
-         echo -e "\n*** Server ***"
-         sendtoserver
-         # ** Lokal **
-         echo -e "\n*** Lokal ***"
-         if [ ! -d "$clientdir" ]; then
-          mkdir -pv "$clientdir"
-          echo -e "Wichtiger Hinweis:\nDies ist eine Kopie der bookmarks.txt vom Server. Die Datei wird nur zum Auslesen genutzt und nur in der Richtung Server => Lokal synchronisiert. Bei Änderungen bitte die Datei auf dem Server modifizieren.\nManuelle Änderungen an der Datei in diesem Ordner werden nicht berücksichtigt\nund ggf. beim Hinzufügen eines neuen Lesezeichens überschrieben." >"${clientdir}/README"
-         fi
-         # Schreibrechte werden erteilt.
-         [ -e "${clientdir}/bookmarks.txt" -a ! -w "${clientdir}/bookmarks.txt" ] && chmod -v +w "${clientdir}/bookmarks.txt"
-         mv -iv ./bookmarks.txt "${clientdir}/bookmarks.txt"
-         # Schreibrechte werden wieder entzogen.
-         [ -w "${clientdir}/bookmarks.txt" ] && chmod -v -w "${clientdir}/bookmarks.txt"
-         break
-         ;;
-      n) echo "Neue bookmarks.txt wurde nicht auf den Server kopiert und liegt mit Schreibrechten im lokalen Ordner ${PWD}."
-         break
-         ;;
-      *) echo "Fehlerhafte Eingabe!"
-         ;;
-    esac
- done
+# ** Anlegen der Datei bookmarks.txt auf Server und im lokalen Bookmark-Ordner (Option -s) **
+if [ "$bmsync" == "yes" ]; then
+
+ if [ -e ./bookmarks.txt ]; then
+
+  echo "Die Datei bookmarks.txt wird jetzt auf den Server kopiert und im lokalen Bookmark-Ordner angelegt ..."
+
+  # ** Server **
+  echo "* Server *"
+  sendtoserver
+
+  # ** Lokal **
+  echo "* Lokal *"
+  if [ ! -d "$clientdir" ]; then
+   mkdir -pv "$clientdir"
+   echo -e "Wichtiger Hinweis:\nDies ist eine Kopie der bookmarks.txt vom Server. Die Datei wird nur zum Auslesen genutzt und nur in der Richtung Server => Lokal synchronisiert. Bei Änderungen bitte die Datei auf dem Server modifizieren.\nManuelle Änderungen an der Datei in diesem Ordner werden nicht berücksichtigt\nund ggf. beim Hinzufügen eines neuen Lesezeichens überschrieben." >"${clientdir}/README"
+  fi
+  # Schreibrechte werden erteilt.
+  [ -e "${clientdir}/bookmarks.txt" -a ! -w "${clientdir}/bookmarks.txt" ] && chmod -v +w "${clientdir}/bookmarks.txt"
+  mv -iv ./bookmarks.txt "${clientdir}/bookmarks.txt"
+  # Schreibrechte werden wieder entzogen.
+  [ -w "${clientdir}/bookmarks.txt" ] && chmod -v -w "${clientdir}/bookmarks.txt"
+
+ else
+
+  echo "Keine bookmarks.txt zum Synchronisieren in ${PWD} gefunden."
+
+ fi
+
 fi
 
+# Ggf. befindet sich die Datei bookmarks.txt ohne Synchronisation noch im cloudybm-Verzeichnis.
+[ -e ./bookmarks.txt ] && echo "bookmarks.txt befindet sich zur weiteren manuellen Bearbeitung im lokalen Ordner ${PWD}."

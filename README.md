@@ -41,6 +41,22 @@ cd /path/to/cloudybm && git pull
 ```
 aktualisiert werden.
 
+Bookmarks konvertieren:
+
+Mit dem Skript bmconverter.sh kann man auf dem Client-Rechner die Bookmarks von einem Browser in das cloudybm-Format umwandeln.  
+Dazu erstellt man sich einfach mit dem Browser eine .json-Datei. Bei Firefox funktioniert das zum Beispiel über das Menü: Lesezeichen - Lesezeichen verwalten - Importieren und Sichern - Sichern  
+Folgende Befehlszeile konvertiert die Daten und verteilt die neue Datei bookmarks.txt in die entsprechenden Ordner auf dem Client-Rechner und dem Server:  
+```bash
+cd /path/to/cloudybm && ./bmconverter.sh -si /path/to/bookmarks.json
+```
+Hilfe erhält man mit folgendem Befehl:
+```bash
+./bmconverter.sh -h
+```
+Das Konvertieren von Bookmarks wurde mit den .json-Dateien folgender Browser erfolgreich getestet:  
+
+  * Firefox
+
 **Nutzung**
 
 Nach der Installation findet man die Programmteile in der Rubrik Zubehör.  
