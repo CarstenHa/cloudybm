@@ -34,6 +34,8 @@ Deinstallieren:
 Hinweis:  
 Bei der Deinstallation werden nur die lokalen Symlinks auf die Repo-Dateien entfernt. Der Repository-Ordner, die ggf. bei der Installation erstellten Ordner sowie Dateien und Ordner auf dem Server werden nicht gelöscht.
 
+
+Aktualisierung:  
 Das Programm kann einfach mit:  
 ```bash
 cd /path/to/cloudybm && git pull
