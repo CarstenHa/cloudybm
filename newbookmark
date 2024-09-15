@@ -1,5 +1,7 @@
 #!/bin/bash
 
+sshversion="$(ssh -V 2>&1 | sed 's/^OpenSSH_\([0-9.]*\).*/\1/')"
+
 # Mit readlink kann man den tatsächlichen Speicherort des Skriptes ermitteln.
 pathofsearchbm="$(dirname $(readlink -f ${0}))"
 if [ -e "${pathofsearchbm}/config/cloudybm.cfg" ]; then
@@ -68,8 +70,13 @@ newbmexit="$(ssh -p "$serverport" "${serveruser}@${servername}" "export remotepa
 case $newbmexit in
     0) # Schreibrechte werden erteilt.
        [ ! -w "${clientdir}/bookmarks.txt" ] && chmod -v +w "${clientdir}/bookmarks.txt"
-       scp -pP "$serverport" "${serveruser}@${servername}":"\"${serverdir}\"/bookmarks.txt" "${clientdir}/"
-       scpexit=$?
+       if [ "$(echo "${sshversion} < 9.6" | bc -l)" == 1 ]; then
+        scp -pP "$serverport" "${serveruser}@${servername}":"\"${serverdir}\"/bookmarks.txt" "${clientdir}/"
+        scpexit=$?
+       else
+        scp -pP "$serverport" "${serveruser}@${servername}":"${serverdir}/bookmarks.txt" "${clientdir}/"
+        scpexit=$?
+       fi
        if [ "$scpexit" == 0 ]; then
         echo "${0}: Neues Lesezeichen hinzugefügt und bookmarks.txt kopiert." | tee >(logger --id=$$)
         notify-send -i "$applypng" Hinweis "Neues Lesezeichen hinzugefügt und bookmarks.txt kopiert."
