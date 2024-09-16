@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# OpenSSH Release Notes: https://www.openssh.com/releasenotes.html
 sshversion="$(ssh -V 2>&1 | sed 's/^OpenSSH_\([0-9.]*\).*/\1/')"
 
 # Mit readlink kann man den tatsächlichen Speicherort des Skriptes ermitteln.
