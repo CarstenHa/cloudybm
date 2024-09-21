@@ -71,7 +71,7 @@ newbmexit="$(ssh -p "$serverport" "${serveruser}@${servername}" "export remotepa
 case $newbmexit in
     0) # Schreibrechte werden erteilt.
        [ ! -w "${clientdir}/bookmarks.txt" ] && chmod -v +w "${clientdir}/bookmarks.txt"
-       if [ "$(echo "${sshversion} < 9.6" | bc -l)" == 1 ]; then
+       if [ "$(echo "${sshversion} < 8.7" | bc -l)" == 1 ]; then
         scp -pP "$serverport" "${serveruser}@${servername}":"\"${serverdir}\"/bookmarks.txt" "${clientdir}/"
         scpexit=$?
        else

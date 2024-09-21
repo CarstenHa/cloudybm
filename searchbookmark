@@ -45,7 +45,7 @@ if [ "$serverreturn" == 0 ]; then
 
    # Schreibrechte werden erteilt.
    [ ! -w "${clientdir}/bookmarks.txt" -a -e "${clientdir}/bookmarks.txt" ] && chmod -v +w "${clientdir}/bookmarks.txt"
-   if [ "$(echo "${sshversion} < 9.6" | bc -l)" == 1 ]; then
+   if [ "$(echo "${sshversion} < 8.7" | bc -l)" == 1 ]; then
     scp -pP "$serverport" "${serveruser}@${servername}":"\"${serverdir}\"/bookmarks.txt" "${clientdir}/"
     scpexitb=$?
    else
@@ -198,7 +198,7 @@ if [ -n "$pisuche" ]; then
        wait
        # Schreibrechte werden erteilt.
        [ ! -w "${clientdir}/bookmarks.txt" ] && chmod -v +w "${clientdir}/bookmarks.txt"
-       if [ "$(echo "${sshversion} < 9.6" | bc -l)" == 1 ]; then
+       if [ "$(echo "${sshversion} < 8.7" | bc -l)" == 1 ]; then
         scp -pP "$serverport" "${serveruser}@${servername}":"\"${serverdir}\"/bookmarks.txt" "${clientdir}/"
         scpexit=$?
        else
