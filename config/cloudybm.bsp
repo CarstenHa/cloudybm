@@ -11,3 +11,5 @@ clientdir=""
 serverdir=""
 # Absoluter Pfad zu cloudybm auf Server
 cloudybmdir=""
+# Kann bei Problemen mit dem SSH Agenten hilfreich sein. Dann die folgende Zeile einbinden (Raute entfernen).
+#[ -z "$SSH_AUTH_SOCK" ] && eval "$(ssh-agent -s)"
